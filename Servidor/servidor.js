@@ -174,25 +174,58 @@ app.post('/tabla/:nombre', async (req, res) => {
 app.post('/login', (req, res) => {
   const { email, contrasena } = req.body;
 
-  const query = 'SELECT * FROM Clientes WHERE Email = ?';
+  // Modificar la consulta para seleccionar específicamente la contraseña
+  const query = 'SELECT Contrasena FROM Clientes WHERE Email = ?';
+  
   db.query(query, [email], async (err, results) => {
     if (err) {
       console.error('Error al buscar usuario:', err);
-      return res.status(500).json({ success: false, message: 'Error del servidor' });
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Error del servidor' 
+      });
     }
 
     if (results.length === 0) {
-      return res.status(401).json({ success: false, message: 'Usuario no encontrado' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Usuario no encontrado' 
+      });
     }
 
-    const usuario = results[0];
-    const contrasenaValida = await bcrypt.compare(contrasena, usuario.Contrasena);
+    const hashAlmacenado = results[0].Contrasena;
+    
+    try {
+      // Comparar la contraseña proporcionada con el hash almacenado
+      const contrasenaValida = await bcrypt.compare(contrasena, hashAlmacenado);
+      
+      if (!contrasenaValida) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Contraseña incorrecta' 
+        });
+      }
 
-    if (!contrasenaValida) {
-      return res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
+      // Generar token JWT (opcional pero recomendado)
+      const token = jwt.sign(
+        { email: email },
+        'tu_secreto_jwt',
+        { expiresIn: '1h' }
+      );
+
+      res.json({ 
+        success: true, 
+        message: 'Inicio de sesión exitoso',
+        token: token 
+      });
+
+    } catch (error) {
+      console.error('Error al comparar contraseñas:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error de autenticación' 
+      });
     }
-
-    res.json({ success: true, message: 'Inicio de sesión exitoso' });
   });
 });
 

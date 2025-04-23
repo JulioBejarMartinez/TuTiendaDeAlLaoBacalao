@@ -20,22 +20,24 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+  
     try {
-      // Enviar credenciales al servidor para validación
-      const response = await axios.post('http://localhost:3000/login', formData);
-
+      const response = await axios.post('http://localhost:3000/login', {
+        email: formData.email,
+        contrasena: formData.contrasena // Enviar contraseña en texto plano
+      });
+  
       if (response.data.success) {
-        // Mostramos animación de éxito antes de redirigir
+        // Almacenar token en localStorage o contexto
+        localStorage.setItem('token', response.data.token);
+        
         setTimeout(() => {
           navigate('/dashboard');
         }, 1000);
-      } else {
-        setError('Credenciales incorrectas. Inténtalo de nuevo.');
       }
     } catch (err) {
-      console.error('Error al iniciar sesión:', err);
-      setError('Hubo un problema al iniciar sesión. Inténtalo más tarde.');
+      const errorMessage = err.response?.data?.message || 'Error de conexión';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
