@@ -1,7 +1,6 @@
 /**
  * API REST con Express y MySQL
  * Proporciona endpoints para manipular tablas de base de datos
- * con sincronización opcional a Firebase
  */
 
 import express from 'express';
@@ -12,22 +11,6 @@ import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import http from 'http';
 import { Server } from 'socket.io';
-import { 
-  initializeApp 
-} from "firebase/app";
-import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy 
-} from "firebase/firestore";
 
 // Configuración de la aplicación
 const app = express();
@@ -151,12 +134,11 @@ app.get('/tabla/:nombre/filtrar', (req, res) => {
 
 /**
  * Inserta un nuevo registro en una tabla específica
- * Opcionalmente sincroniza con Firebase si existe la configuración
  * 
  * @route POST /tabla/:nombre
  * @param {string} nombre - Nombre de la tabla donde insertar
  * @body {Object} datos - Datos a insertar (pares campo-valor)
- * @returns {Object} - ID del registro insertado y estado de sincronización
+ * @returns {Object} - ID del registro insertado
  */
 app.post('/tabla/:nombre', async (req, res) => {
   const nombreTabla = req.params.nombre;
@@ -174,7 +156,7 @@ app.post('/tabla/:nombre', async (req, res) => {
   
   const query = `INSERT INTO ${tablaEscapada} (${campos}) VALUES (${valores})`;
   
-  db.query(query, async (err, results) => {
+  db.query(query, (err, results) => {
     if (err) {
       console.error('Error al insertar registro:', err);
       return res.status(500).json({ 
@@ -182,29 +164,35 @@ app.post('/tabla/:nombre', async (req, res) => {
       });
     }
     
-    try {
-      // Sincronizar con Firebase si existe la configuración para esta tabla
-      if (syncFirebase && syncFirebase[nombreTabla]?.insert) {
-        await syncFirebase[nombreTabla].insert(results.insertId, datos);
-        
-        res.json({ 
-          message: 'Registro insertado exitosamente', 
-          id: results.insertId,
-          firebase: 'Registro sincronizado en Firebase'
-        });
-      } else {
-        res.json({ 
-          message: 'Registro insertado exitosamente', 
-          id: results.insertId
-        });
-      }
-    } catch (firebaseError) {
-      console.error('Error al sincronizar con Firebase:', firebaseError);
-      res.status(500).json({ 
-        error: 'Registro creado en MySQL pero falló la sincronización con Firebase',
-        mysqlId: results.insertId
-      });
+    res.json({ 
+      message: 'Registro insertado exitosamente', 
+      id: results.insertId
+    });
+  });
+});
+
+app.post('/login', (req, res) => {
+  const { email, contrasena } = req.body;
+
+  const query = 'SELECT * FROM Clientes WHERE Email = ?';
+  db.query(query, [email], async (err, results) => {
+    if (err) {
+      console.error('Error al buscar usuario:', err);
+      return res.status(500).json({ success: false, message: 'Error del servidor' });
     }
+
+    if (results.length === 0) {
+      return res.status(401).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    const usuario = results[0];
+    const contrasenaValida = await bcrypt.compare(contrasena, usuario.Contrasena);
+
+    if (!contrasenaValida) {
+      return res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
+    }
+
+    res.json({ success: true, message: 'Inicio de sesión exitoso' });
   });
 });
 
