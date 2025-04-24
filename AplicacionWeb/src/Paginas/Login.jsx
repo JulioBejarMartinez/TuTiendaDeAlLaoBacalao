@@ -45,6 +45,17 @@ const Login = () => {
 
   return (
     <div className="container-fluid py-6 mt-5">
+      {/* Logo de la empresa */}
+      <div className="row justify-content-center mb-4">
+        <div className="col-12 col-md-8 col-lg-6 text-center">
+          <img 
+            src="/TuTiendaDeAlLaoLogo.png" 
+            alt="TaTiendaDeAlLao" 
+            className="img-fluid" 
+            style={{ maxHeight: '120px' }}
+          />
+        </div>
+      </div>
       <div className="row justify-content-center">
         <div className="col-12 col-md-8 col-lg-6">
           <div className="card border-0 shadow-lg rounded-3 overflow-hidden">
