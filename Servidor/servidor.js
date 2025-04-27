@@ -54,6 +54,21 @@ app.get('/', (req, res) => {
   res.send('API funcionando correctamente');
 });
 
+
+/**************************************************************************
+ *                          ENDPOINTS GENÉRICOS                          *
+ * Estos endpoints permiten realizar operaciones genéricas sobre tablas  *
+ * de la base de datos. Son útiles para manejar múltiples tablas con un  *
+ * conjunto común de operaciones como obtener registros, filtrar datos,  *
+ * e insertar nuevos registros.                                          *
+ *                                                                       *
+ * NOTA: Estos endpoints deben usarse con precaución, ya que permiten    *
+ * acceso dinámico a las tablas. Asegúrate de validar adecuadamente los  *
+ * datos de entrada para evitar problemas de seguridad como inyecciones  *
+ * SQL o accesos no autorizados.                                         *
+ **************************************************************************/
+
+
 /**
  * Obtiene todos los registros de una tabla específica
  * 
@@ -171,6 +186,33 @@ app.post('/tabla/:nombre', async (req, res) => {
   });
 });
 
+
+/**************************************************************************
+ *                          ENDPOINTS ESPECÍFICOS                        *
+ * Estos endpoints están diseñados para realizar acciones concretas que  *
+ * requieren mayor complejidad y lógica personalizada. Incluyen tareas   *
+ * como autenticación de usuarios, generación de tokens, y otras         *
+ * operaciones específicas que no se pueden generalizar fácilmente.      *
+ *                                                                        *
+ * NOTA: Asegúrate de manejar adecuadamente la validación de datos y la  *
+ * seguridad en estos endpoints, ya que suelen involucrar información    *
+ * sensible o lógica crítica para la aplicación.                         *
+ **************************************************************************/
+
+
+/**
+ * Autentica a un usuario mediante su correo electrónico y contraseña
+ * 
+ * @route POST /login
+ * @body {string} email - Correo electrónico del usuario
+ * @body {string} contrasena - Contraseña del usuario
+ * @returns {Object} - Mensaje de éxito, token JWT si la autenticación es correcta
+ * 
+ * NOTA: Este endpoint valida las credenciales del usuario y genera un 
+ * token JWT para sesiones autenticadas. Asegúrate de proteger el secreto 
+ * del token y manejar adecuadamente los errores para evitar fugas de 
+ * información sensible.
+ */
 app.post('/login', (req, res) => {
   const { email, contrasena } = req.body;
 
