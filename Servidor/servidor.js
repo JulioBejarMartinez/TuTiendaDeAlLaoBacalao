@@ -11,10 +11,27 @@ import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import http from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
+import multer from 'multer';
+
 
 // Configuración de la aplicación
 const app = express();
 const port = 3000;
+
+// Configuración de multer para guardar imágenes en la carpeta "imagenes"
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'imagenes'); // Carpeta donde se guardarán las imágenes
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname)); // Nombre único para cada archivo
+  }
+});
+
+const upload = multer({ storage: storage });
+
 
 // Middleware
 app.use(express.json());
@@ -193,7 +210,7 @@ app.post('/tabla/:nombre', async (req, res) => {
  * requieren mayor complejidad y lógica personalizada. Incluyen tareas   *
  * como autenticación de usuarios, generación de tokens, y otras         *
  * operaciones específicas que no se pueden generalizar fácilmente.      *
- *                                                                        *
+ *                                                                       *
  * NOTA: Asegúrate de manejar adecuadamente la validación de datos y la  *
  * seguridad en estos endpoints, ya que suelen involucrar información    *
  * sensible o lógica crítica para la aplicación.                         *
@@ -268,6 +285,58 @@ app.post('/login', (req, res) => {
         message: 'Error de autenticación' 
       });
     }
+  });
+});
+
+/**
+ * Añade un nuevo producto a la base de datos con una imagen
+ * 
+ * @route POST /productos
+ * @body {string} Nombre - Nombre del producto
+ * @body {string} Descripcion - Descripción del producto
+ * @body {decimal} PrecioProducto - Precio del producto
+ * @body {int} StockActual - Stock actual del producto
+ * @body {int} StockMinimo - Stock mínimo del producto
+ * @body {string} Tipo - Tipo del producto (Conservas, Bebidas, etc.)
+ * @body {int} ID_Proveedor - ID del proveedor
+ * @file {File} ImagenProducto - Imagen del producto
+ * @returns {Object} - Mensaje de éxito y datos del producto añadido
+ */
+app.post('/productos', upload.single('ImagenProducto'), (req, res) => {
+  const { Nombre, Descripcion, PrecioProducto, StockActual, StockMinimo, Tipo, ID_Proveedor } = req.body;
+  const imagenPath = req.file ? `imagenes/${req.file.filename}` : null;
+
+  if (!Nombre || !PrecioProducto || !StockActual || !StockMinimo || !Tipo || !ID_Proveedor) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
+
+  const query = `
+    INSERT INTO Productos (Nombre, Descripcion, PrecioProducto, StockActual, StockMinimo, Tipo, ImagenProducto, ID_Proveedor)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [Nombre, Descripcion, PrecioProducto, StockActual, StockMinimo, Tipo, imagenPath, ID_Proveedor];
+
+  db.query(query, values, (err, results) => {
+    if (err) {
+      console.error('Error al insertar producto:', err);
+      return res.status(500).json({ error: 'Error al insertar el producto' });
+    }
+
+    res.json({
+      message: 'Producto añadido exitosamente',
+      producto: {
+        ID_Producto: results.insertId,
+        Nombre,
+        Descripcion,
+        PrecioProducto,
+        StockActual,
+        StockMinimo,
+        Tipo,
+        ImagenProducto: imagenPath,
+        ID_Proveedor
+      }
+    });
   });
 });
 
