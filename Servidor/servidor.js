@@ -13,6 +13,8 @@ import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import multer from 'multer';
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 
 
 // Configuración de la aplicación
@@ -52,6 +54,19 @@ const db = mysql.createConnection({
   password: "Ka3b0134679",
   database: "proyecto_lumarsan_jbejar"
 });
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDo1LPV3QFL4jguJKYzjAlHPCvs7ezU-oo",
+  authDomain: "tutiendadeallao.firebaseapp.com",
+  projectId: "tutiendadeallao",
+  storageBucket: "tutiendadeallao.firebasestorage.app",
+  messagingSenderId: "690381263340",
+  appId: "1:690381263340:web:12e50c7b667da11dc030c9",
+  measurementId: "G-FX7BKD6LK7"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const analytics = getAnalytics(firebaseApp);
 
 // Establecer conexión a la base de datos
 db.connect((err) => {
@@ -405,6 +420,8 @@ app.post('/productos', upload.single('ImagenProducto'), (req, res) => {
     });
   });
 });
+
+
 
 // Iniciar el servidor HTTP
 app.listen(port, () => {
