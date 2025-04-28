@@ -203,6 +203,72 @@ app.post('/tabla/:nombre', async (req, res) => {
   });
 });
 
+/**
+ * Actualiza un registro específico en una tabla
+ * 
+ * @route PUT /tabla/:nombre/:id
+ * @param {string} nombre - Nombre de la tabla donde actualizar
+ * @param {string} id - ID del registro a actualizar
+ * @query {string} [idColumna=id] - Nombre de la columna que actúa como identificador (por defecto "id")
+ * @body {Object} datos - Datos a actualizar (pares campo-valor)
+ * @returns {Object} - Mensaje de éxito y número de filas afectadas
+ */
+app.put('/tabla/:nombre/:id', (req, res) => {
+  const nombreTabla = req.params.nombre;
+  const id = req.params.id;
+  const idColumna = req.query.idColumna || 'id';
+  const tablaEscapada = mysql.escapeId(nombreTabla);
+  const datos = req.body;
+
+  const updates = Object.keys(datos).map(campo => 
+    `${mysql.escapeId(campo)} = ${mysql.escape(datos[campo])}`
+  ).join(', ');
+
+  const query = `UPDATE ${tablaEscapada} SET ${updates} WHERE ${mysql.escapeId(idColumna)} = ${mysql.escape(id)}`;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error al actualizar:', err);
+      return res.status(500).json({ error: 'Error al actualizar el registro' });
+    }
+    
+    res.json({ 
+      message: 'Registro actualizado exitosamente',
+      affectedRows: results.affectedRows
+    });
+  });
+});
+
+/**
+ * Elimina un registro específico de una tabla
+ * 
+ * @route DELETE /tabla/:nombre/:id
+ * @param {string} nombre - Nombre de la tabla donde eliminar
+ * @param {string} id - ID del registro a eliminar
+ * @query {string} [idColumna=id] - Nombre de la columna que actúa como identificador (por defecto "id")
+ * @returns {Object} - Mensaje de éxito y número de filas afectadas
+ */
+app.delete('/tabla/:nombre/:id', (req, res) => {
+  const nombreTabla = req.params.nombre;
+  const id = req.params.id;
+  const idColumna = req.query.idColumna || 'id';
+  const tablaEscapada = mysql.escapeId(nombreTabla);
+
+  const deleteQuery = `DELETE FROM ${tablaEscapada} WHERE ${mysql.escapeId(idColumna)} = ${mysql.escape(id)}`;
+
+  db.query(deleteQuery, (err, results) => {
+    if (err) {
+      console.error('Error al borrar:', err);
+      return res.status(500).json({ error: 'Error al borrar el registro' });
+    }
+    
+    res.json({ 
+      message: 'Registro borrado exitosamente',
+      affectedRows: results.affectedRows
+    });
+  });
+});
+
 
 /**************************************************************************
  *                          ENDPOINTS ESPECÍFICOS                        *
