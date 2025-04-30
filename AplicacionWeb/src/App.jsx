@@ -6,6 +6,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import 'bootswatch/dist/brite/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
+import Dashboard from './Paginas/Dashboard';
 import './App.css'
 
 function App() {
@@ -17,7 +18,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
-        <Route path="/dashboard" element={<h1>Bienvenido al Dashboard</h1>} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
     </div>

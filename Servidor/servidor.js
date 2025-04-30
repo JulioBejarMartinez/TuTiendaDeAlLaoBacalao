@@ -14,13 +14,17 @@ import axios from 'axios';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path'
 import multer from 'multer';
 import { initializeApp } from "firebase/app";
 import { getAuth } from 'firebase-admin/auth';
 import admin from 'firebase-admin';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-// Inicializar Firebase Admin SDK
+// Inicializar Firebase Admin SDK (código modificado)
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(
@@ -46,6 +50,19 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+/**
+ * Genera una contraseña aleatoria
+ * @returns {string} - Contraseña aleatoria
+ */
+function generarContrasenaAleatoria() {
+  const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+  const longitud = 12;
+  let contrasena = '';
+  for (let i = 0; i < longitud; i++) {
+    contrasena += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+  }
+  return contrasena;
+}
 
 // Middleware
 app.use(express.json());
@@ -380,7 +397,18 @@ app.post('/login', (req, res) => {
   });
 });
 
-
+/**
+ * Autentica a un usuario mediante un token de Google
+ * 
+ * @route POST /auth/google
+ * @body {string} token - Token de autenticación proporcionado por Google
+ * @returns {Object} - Mensaje de éxito, token JWT si la autenticación es correcta
+ * 
+ * NOTA: Este endpoint verifica el token de Google, crea un nuevo usuario 
+ * en la base de datos si no existe, y genera un token JWT para sesiones 
+ * autenticadas. Asegúrate de manejar adecuadamente los errores y proteger 
+ * el secreto del token JWT.
+ */
 app.post('/auth/google', async (req, res) => {
   const { token } = req.body;
 
@@ -391,23 +419,29 @@ app.post('/auth/google', async (req, res) => {
 
     // Verificar si el usuario ya existe en la base de datos
     const query = 'SELECT * FROM Clientes WHERE Email = ?';
-    db.query(query, [email], (err, results) => {
+    db.query(query, [email], async (err, results) => {
       if (err) {
         console.error('Error al buscar usuario:', err);
         return res.status(500).json({ error: 'Error del servidor' });
       }
 
       if (results.length === 0) {
-        // Si el usuario no existe, crearlo
+        // Si el usuario no existe, generarle una contraseña aleatoria
+        const contrasenaAleatoria = generarContrasenaAleatoria();
+        const hashContrasena = await bcrypt.hash(contrasenaAleatoria, 10);
+
+        // Insertar el nuevo usuario en la base de datos
         const insertQuery = `
           INSERT INTO Clientes (Nombre, Email, Contrasena)
           VALUES (?, ?, ?)
         `;
-        db.query(insertQuery, [name, email, null], (err) => {
+        db.query(insertQuery, [name, email, hashContrasena], (err) => {
           if (err) {
             console.error('Error al crear usuario:', err);
             return res.status(500).json({ error: 'Error al crear usuario' });
           }
+
+          console.log(`Usuario creado con contraseña aleatoria: ${contrasenaAleatoria}`);
         });
       }
 
@@ -418,6 +452,35 @@ app.post('/auth/google', async (req, res) => {
   } catch (error) {
     console.error('Error al verificar token de Google:', error);
     res.status(401).json({ error: 'Token inválido' });
+  }
+});
+
+/**
+ * Obtiene los datos del usuario autenticado
+ * 
+ * @route GET /usuario
+ * @header {string} Authorization - Token JWT
+ * @returns {Object} - Datos del usuario sin contraseña
+ */
+app.get('/usuario', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'tu_secreto_jwt');
+    const query = 'SELECT ID_Cliente, Nombre, Email, Telefono, PuntosFidelidad FROM Clientes WHERE Email = ?';
+    
+    db.query(query, [decoded.email], (err, results) => {
+      if (err || results.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+      res.json(results[0]);
+    });
+  } catch (error) {
+    res.status(401).json({ error: 'Token inválido o expirado' });
   }
 });
 
