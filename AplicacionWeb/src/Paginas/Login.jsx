@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDo1LPV3QFL4jguJKYzjAlHPCvs7ezU-oo",
+  authDomain: "tutiendadeallao.firebaseapp.com",
+  projectId: "tutiendadeallao",
+  storageBucket: "tutiendadeallao.firebasestorage.app",
+  messagingSenderId: "690381263340",
+  appId: "1:690381263340:web:12e50c7b667da11dc030c9",
+  measurementId: "G-FX7BKD6LK7"
+};
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +26,26 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Enviar el token de Google al backend para validarlo o crear un usuario en MySQL
+      const idToken = await user.getIdToken();
+      const response = await axios.post('http://localhost:3000/auth/google', { token: idToken });
+
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token);
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setError('Error al iniciar sesión con Google');
+      console.error(err);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -148,7 +184,7 @@ const Login = () => {
                   </div>
                   
                   <div className="d-flex justify-content-center gap-4 mb-2">
-                    <button className="btn btn-outline-primary rounded-circle p-3" title="Continuar con Google">
+                    <button className="btn btn-outline-primary rounded-circle p-3" title="Continuar con Google" onClick={handleGoogleLogin}>
                       <i className="bi bi-google fs-5"></i>
                     </button>
                     <button className="btn btn-outline-primary rounded-circle p-3" title="Continuar con Facebook">

@@ -2,6 +2,8 @@
  * API REST con Express y MySQL
  * Proporciona endpoints para manipular tablas de base de datos
  */
+import dotenv from 'dotenv';
+dotenv.config(); // Cargar las variables de entorno
 
 import express from 'express';
 import mysql from 'mysql';
@@ -14,8 +16,18 @@ import { Server } from 'socket.io';
 import path from 'path';
 import multer from 'multer';
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAuth } from 'firebase-admin/auth';
+import admin from 'firebase-admin';
 
+
+// Inicializar Firebase Admin SDK
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(
+      path.resolve(__dirname, './FirebaseAdmin/tutiendadeallao-firebase-adminsdk-fbsvc-00c22ed6d8.json')
+    ),
+  });
+}
 
 // Configuración de la aplicación
 const app = express();
@@ -66,7 +78,6 @@ const firebaseConfig = {
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
-const analytics = getAnalytics(firebaseApp);
 
 // Establecer conexión a la base de datos
 db.connect((err) => {
@@ -367,6 +378,47 @@ app.post('/login', (req, res) => {
       });
     }
   });
+});
+
+
+app.post('/auth/google', async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    // Verificar el token de Google
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const { email, name } = decodedToken;
+
+    // Verificar si el usuario ya existe en la base de datos
+    const query = 'SELECT * FROM Clientes WHERE Email = ?';
+    db.query(query, [email], (err, results) => {
+      if (err) {
+        console.error('Error al buscar usuario:', err);
+        return res.status(500).json({ error: 'Error del servidor' });
+      }
+
+      if (results.length === 0) {
+        // Si el usuario no existe, crearlo
+        const insertQuery = `
+          INSERT INTO Clientes (Nombre, Email, Contrasena)
+          VALUES (?, ?, ?)
+        `;
+        db.query(insertQuery, [name, email, null], (err) => {
+          if (err) {
+            console.error('Error al crear usuario:', err);
+            return res.status(500).json({ error: 'Error al crear usuario' });
+          }
+        });
+      }
+
+      // Generar un token JWT para la sesión
+      const jwtToken = jwt.sign({ email }, 'tu_secreto_jwt', { expiresIn: '1h' });
+      res.json({ success: true, token: jwtToken });
+    });
+  } catch (error) {
+    console.error('Error al verificar token de Google:', error);
+    res.status(401).json({ error: 'Token inválido' });
+  }
 });
 
 /**
