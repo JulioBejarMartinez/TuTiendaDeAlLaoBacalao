@@ -3,7 +3,7 @@
  * Proporciona endpoints para manipular tablas de base de datos
  */
 import dotenv from 'dotenv';
-dotenv.config(); // Cargar las variables de entorno
+dotenv.config({ path: './Servidor/.env' }); // Cargar las variables de entorno
 
 import express from 'express';
 import mysql from 'mysql';
@@ -24,13 +24,36 @@ import admin from 'firebase-admin';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Inicializar Firebase Admin SDK (código modificado)
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      path.resolve(__dirname, './FirebaseAdmin/tutiendadeallao-firebase-adminsdk-fbsvc-00c22ed6d8.json')
-    ),
-  });
+  try {
+    // Check for required Firebase environment variables
+    if (!process.env.FIREBASE_PRIVATE_KEY) {
+      throw new Error('FIREBASE_PRIVATE_KEY environment variable is missing');
+    }
+    
+    // Process the private key to replace escaped newlines
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        type: process.env.FIREBASE_TYPE || 'service_account',
+        project_id: process.env.FIREBASE_PROJECT_ID,
+        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+        private_key: privateKey,
+        client_email: process.env.FIREBASE_CLIENT_EMAIL,
+        client_id: process.env.FIREBASE_CLIENT_ID,
+        auth_uri: process.env.FIREBASE_AUTH_URI,
+        token_uri: process.env.FIREBASE_TOKEN_URI,
+        auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_CERT_URL,
+        client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL,
+        universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN || 'googleapis.com',
+      }),
+    });
+    console.log('Firebase Admin SDK initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Firebase Admin SDK:', error.message);
+    // The application can continue without Firebase, or you can handle as needed
+  }
 }
 
 // Configuración de la aplicación
