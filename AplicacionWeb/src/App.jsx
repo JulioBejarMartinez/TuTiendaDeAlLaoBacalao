@@ -7,6 +7,7 @@ import viteLogo from '/vite.svg'
 import 'bootswatch/dist/brite/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Dashboard from './Paginas/Dashboard';
+import Tienda from './Paginas/Tienda';
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/tienda" element={<Tienda />} />
       </Routes>
     </Router>
     </div>

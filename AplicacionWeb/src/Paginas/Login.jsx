@@ -39,7 +39,7 @@ const Login = () => {
 
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
-        navigate('/dashboard');
+        navigate('/Tienda');
       }
     } catch (err) {
       setError('Error al iniciar sesión con Google');
@@ -68,7 +68,7 @@ const Login = () => {
         localStorage.setItem('token', response.data.token);
         
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/Tienda');
         }, 1000);
       }
     } catch (err) {

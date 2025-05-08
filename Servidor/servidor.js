@@ -85,6 +85,7 @@ function generarContrasenaAleatoria() {
 }
 
 // Middleware
+app.use('/imagenes', express.static(path.join(__dirname, 'imagenes')));
 app.use(express.json());
 app.use(cors({
   origin: '*',
