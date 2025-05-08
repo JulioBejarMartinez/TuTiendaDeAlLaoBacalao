@@ -26,12 +26,10 @@ const __dirname = dirname(__filename);
 
 if (!admin.apps.length) {
   try {
-    // Check for required Firebase environment variables
     if (!process.env.FIREBASE_PRIVATE_KEY) {
       throw new Error('FIREBASE_PRIVATE_KEY environment variable is missing');
     }
     
-    // Process the private key to replace escaped newlines
     const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
     
     admin.initializeApp({
@@ -52,7 +50,6 @@ if (!admin.apps.length) {
     console.log('Firebase Admin SDK initialized successfully');
   } catch (error) {
     console.error('Failed to initialize Firebase Admin SDK:', error.message);
-    // The application can continue without Firebase, or you can handle as needed
   }
 }
 
@@ -501,6 +498,61 @@ app.get('/usuario', (req, res) => {
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
       res.json(results[0]);
+    });
+  } catch (error) {
+    res.status(401).json({ error: 'Token inválido o expirado' });
+  }
+});
+
+/**
+ * Actualiza la información del usuario autenticado
+ * 
+ * @route PUT /usuario
+ * @header {string} Authorization - Token JWT
+ * @body {string} [Nombre] - Nuevo nombre del usuario
+ * @body {string} [Contrasena] - Nueva contraseña del usuario
+ * @returns {Object} - Mensaje de éxito
+ */
+app.put('/usuario', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'tu_secreto_jwt');
+    const { Nombre, Contrasena } = req.body;
+
+    if (!Nombre && !Contrasena) {
+      return res.status(400).json({ error: 'Se requiere al menos un campo para actualizar' });
+    }
+
+    const updates = [];
+    const values = [];
+
+    if (Nombre) {
+      updates.push('Nombre = ?');
+      values.push(Nombre);
+    }
+
+    if (Contrasena) {
+      const hashContrasena = await bcrypt.hash(Contrasena, 10);
+      updates.push('Contrasena = ?');
+      values.push(hashContrasena);
+    }
+
+    values.push(decoded.email);
+
+    const query = `UPDATE Clientes SET ${updates.join(', ')} WHERE Email = ?`;
+
+    db.query(query, values, (err, results) => {
+      if (err) {
+        console.error('Error al actualizar usuario:', err);
+        return res.status(500).json({ error: 'Error al actualizar la información del usuario' });
+      }
+
+      res.json({ message: 'Información actualizada exitosamente' });
     });
   } catch (error) {
     res.status(401).json({ error: 'Token inválido o expirado' });

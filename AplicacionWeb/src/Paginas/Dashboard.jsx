@@ -7,6 +7,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [formData, setFormData] = useState({ Nombre: '', Contrasena: '' });
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +27,7 @@ const Dashboard = () => {
           }
         });
         setCliente(response.data);
+        setFormData({ Nombre: response.data.Nombre, Contrasena: '' });
         setError(null);
       } catch (error) {
         console.error('Error al obtener datos:', error);
@@ -44,8 +47,27 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  const toggleProfileMenu = () => {
-    setShowProfileMenu(!showProfileMenu);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.put('http://localhost:3000/usuario', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setSuccessMessage(response.data.message);
+      setError(null);
+    } catch (error) {
+      console.error('Error al actualizar datos:', error);
+      setError('No se pudieron actualizar tus datos. Por favor, inténtalo de nuevo más tarde.');
+    }
   };
 
   if (loading) {
@@ -89,7 +111,7 @@ const Dashboard = () => {
             <div className="dropdown">
               <button 
                 className="btn btn-outline-light rounded-pill d-flex align-items-center" 
-                onClick={toggleProfileMenu}
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
               >
                 <div className="avatar me-2">
                   {cliente.Nombre.charAt(0).toUpperCase()}
@@ -104,15 +126,6 @@ const Dashboard = () => {
                     <h6>{cliente.Nombre}</h6>
                     <small className="text-muted">{cliente.Email}</small>
                   </div>
-                  <div className="dropdown-divider"></div>
-                  <a className="dropdown-item" href="#!">
-                    <i className="bi bi-person-circle me-2"></i>
-                    Mi Perfil
-                  </a>
-                  <a className="dropdown-item" href="#!">
-                    <i className="bi bi-gear me-2"></i>
-                    Configuración
-                  </a>
                   <div className="dropdown-divider"></div>
                   <button 
                     className="dropdown-item text-danger" 
@@ -139,96 +152,49 @@ const Dashboard = () => {
                 </div>
                 <h3 className="card-title">{cliente.Nombre}</h3>
                 <p className="text-muted mb-3">{cliente.Email}</p>
-                <div className="d-grid">
-                  <button className="btn btn-outline-primary">
-                    <i className="bi bi-pencil-square me-2"></i>
-                    Editar perfil
-                  </button>
-                </div>
               </div>
             </div>
           </div>
           
           <div className="col-lg-8">
-            <div className="row">
-              <div className="col-md-6 mb-4">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-                    <div className="d-flex align-items-center mb-3">
-                      <div className="icon-box bg-primary text-white">
-                        <i className="bi bi-telephone"></i>
-                      </div>
-                      <h5 className="card-title ms-3 mb-0">Contacto</h5>
-                    </div>
-                    <p className="card-text">
-                      <strong>Teléfono:</strong><br />
-                      {cliente.Telefono || 'No registrado'}
-                    </p>
-                    <button className="btn btn-sm btn-light">
-                      <i className="bi bi-pencil me-1"></i> Actualizar
-                    </button>
+            <div className="card border-0 shadow-sm">
+              <div className="card-body">
+                <h5 className="card-title">Actualizar información</h5>
+                {successMessage && (
+                  <div className="alert alert-success" role="alert">
+                    {successMessage}
                   </div>
-                </div>
-              </div>
-              
-              <div className="col-md-6 mb-4">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-                    <div className="d-flex align-items-center mb-3">
-                      <div className="icon-box bg-warning text-white">
-                        <i className="bi bi-star"></i>
-                      </div>
-                      <h5 className="card-title ms-3 mb-0">Programa de fidelidad</h5>
-                    </div>
-                    <div className="text-center py-2">
-                      <h2 className="display-4 fw-bold text-warning">{cliente.PuntosFidelidad}</h2>
-                      <p className="text-muted">puntos acumulados</p>
-                    </div>
-                    <div className="d-grid">
-                      <button className="btn btn-warning">
-                        <i className="bi bi-gift me-2"></i>
-                        Canjear puntos
-                      </button>
-                    </div>
+                )}
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    {error}
                   </div>
-                </div>
-              </div>
-              
-              <div className="col-12 mb-4">
-                <div className="card border-0 shadow-sm">
-                  <div className="card-header bg-transparent border-0">
-                    <h5 className="mb-0">Actividad reciente</h5>
+                )}
+                <form onSubmit={handleFormSubmit}>
+                  <div className="mb-3">
+                    <label htmlFor="Nombre" className="form-label">Nombre</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      id="Nombre" 
+                      name="Nombre" 
+                      value={formData.Nombre} 
+                      onChange={handleInputChange} 
+                    />
                   </div>
-                  <div className="card-body">
-                    <div className="activity-item py-2">
-                      <div className="d-flex align-items-center">
-                        <div className="icon-box bg-success text-white">
-                          <i className="bi bi-check-circle"></i>
-                        </div>
-                        <div className="ms-3">
-                          <h6 className="mb-1">Inicio de sesión exitoso</h6>
-                          <small className="text-muted">Hoy, {new Date().toLocaleTimeString()}</small>
-                        </div>
-                      </div>
-                    </div>
-                    <hr />
-                    <div className="activity-item py-2">
-                      <div className="d-flex align-items-center">
-                        <div className="icon-box bg-info text-white">
-                          <i className="bi bi-plus-circle"></i>
-                        </div>
-                        <div className="ms-3">
-                          <h6 className="mb-1">Puntos de fidelidad añadidos</h6>
-                          <small className="text-muted">Hace 3 días</small>
-                        </div>
-                        <span className="ms-auto badge bg-success">+10 pts</span>
-                      </div>
-                    </div>
+                  <div className="mb-3">
+                    <label htmlFor="Contrasena" className="form-label">Nueva contraseña</label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      id="Contrasena" 
+                      name="Contrasena" 
+                      value={formData.Contrasena} 
+                      onChange={handleInputChange} 
+                    />
                   </div>
-                  <div className="card-footer bg-transparent border-0 text-center">
-                    <a href="#!" className="text-decoration-none">Ver todo el historial</a>
-                  </div>
-                </div>
+                  <button type="submit" className="btn btn-primary">Guardar cambios</button>
+                </form>
               </div>
             </div>
           </div>
