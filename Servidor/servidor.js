@@ -612,7 +612,71 @@ app.post('/productos', upload.single('ImagenProducto'), (req, res) => {
   });
 });
 
+/**
+ * Obtiene todos los productos de la base de datos
+ * 
+ * @route GET /productos
+ * @returns {Array} - Lista de productos con todos sus datos
+ * 
+ * NOTA: Este endpoint devuelve todos los registros de la tabla `Productos`.
+ * Útil para mostrar el catálogo completo de productos en la aplicación.
+ * Asegúrate de manejar adecuadamente los errores en el cliente.
+ */
+app.get('/productos', (req, res) => {
+  const query = 'SELECT * FROM Productos';
 
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error al obtener productos:', err);
+      return res.status(500).json({ error: 'Error al obtener los productos' });
+    }
+
+    res.json(results);
+  });
+});
+
+/**
+ * Obtiene la imagen de un producto según su ID
+ * 
+ * @route GET /productos/imagen/:id
+ * @param {int} id - ID del producto
+ * @returns {File} - Archivo de imagen del producto
+ * 
+ * NOTA: Este endpoint busca la ruta de la imagen en la base de datos y 
+ * sirve el archivo correspondiente. Si la imagen no existe o no se encuentra, 
+ * devuelve un error 404. Asegúrate de que las rutas de las imágenes sean válidas 
+ * y que la carpeta de imágenes sea accesible desde el servidor.
+ */
+app.get('/productos/imagen/:id', (req, res) => {
+  const { id } = req.params;
+
+  const query = 'SELECT ImagenProducto FROM Productos WHERE ID_Producto = ?';
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('Error al obtener la imagen del producto:', err);
+      return res.status(500).json({ error: 'Error al obtener la imagen del producto' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    const imagenPath = results[0].ImagenProducto;
+
+    if (!imagenPath) {
+      return res.status(404).json({ error: 'Imagen no encontrada para este producto' });
+    }
+
+    const fullPath = path.join(__dirname, '..', imagenPath); // Ajuste para la ruta relativa
+    res.sendFile(fullPath, (err) => {
+      if (err) {
+        console.error('Error al enviar la imagen:', err);
+        res.status(500).json({ error: 'Error al cargar la imagen' });
+      }
+    });
+  });
+});
 
 // Iniciar el servidor HTTP
 app.listen(port, () => {

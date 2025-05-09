@@ -17,13 +17,13 @@ const Tienda = () => {
     const fetchProductos = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/tabla/Productos`);
+        const response = await axios.get(`${API_URL}/productos`); // Cambiado a /productos
         setProductos(response.data);
-        
+
         // Extraer categorías únicas (tipos) de productos
         const tiposUnicos = [...new Set(response.data.map(producto => producto.Tipo))];
         setCategorias(['Todas', ...tiposUnicos]);
-        
+
         setError(null);
       } catch (err) {
         console.error('Error al cargar productos:', err);
@@ -44,23 +44,12 @@ const Tienda = () => {
   };
 
   const getImageUrl = (producto) => {
-    // Si la URL de la imagen ya es completa, usarla directamente
-    if (producto.ImagenProducto && producto.ImagenProducto.startsWith('http')) {
-      return producto.ImagenProducto;
+    if (imagenError[producto.ID_Producto]) {
+      return 'https://via.placeholder.com/200x200?text=Imagen+no+disponible'; // Placeholder si hay error
     }
-    
-    // Si hay un error con la imagen o no hay ruta, usar imagen de placeholder
-    if (imagenError[producto.ID_Producto] || !producto.ImagenProducto) {
-      return 'https://via.placeholder.com/200x200?text=Imagen+no+disponible';
-    }
-    
-    // Asegurarse de que la ruta esté correctamente formada
-    let imagePath = producto.ImagenProducto;
-    if (imagePath.startsWith('/')) {
-      imagePath = imagePath.substring(1);
-    }
-    
-    return `${API_URL}/${imagePath}`;
+    // Usar el endpoint para obtener la imagen del producto
+    // Añadimos timestamp para evitar caché del navegador
+    return `${API_URL}/productos/imagen/${producto.ID_Producto}?t=${new Date().getTime()}`;
   };
 
   const handleComprar = (producto) => {
@@ -69,7 +58,7 @@ const Tienda = () => {
       alert(`Lo sentimos, ${producto.Nombre} no está disponible en este momento.`);
       return;
     }
-    
+
     alert(`Has comprado: ${producto.Nombre}`);
     // Aquí implementarías la lógica para procesar la compra
   };
@@ -113,7 +102,16 @@ const Tienda = () => {
   }
 
   return (
-    <div className="tienda-wrapper min-vh-100 d-flex flex-column">
+    <div className="tienda-wrapper min-vh-100 d-flex flex-column" style={{ backgroundColor: '#f0f2f5' }}>
+      {/* Logo de la empresa */}
+    <div className="container-fluid py-3 bg-light text-center" style={{ backgroundColor: '#f8f9fa' }}>
+      <img 
+        src="/TuTiendaDeAlLaoLogo.png" 
+        alt="TuTiendaDeAlLao" 
+        className="img-fluid" 
+        style={{ maxHeight: '120px' }}
+      />
+    </div>
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div className="container">
