@@ -9,11 +9,13 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import Dashboard from './Paginas/Dashboard';
 import Tienda from './Paginas/Tienda';
 import DetalleProducto from './Paginas/DetalleProducto'; 
+import { CestaProvider } from './Contextos/CestaContext';
 import './App.css'
 
 function App() {
 
   return (
+    <CestaProvider>
     <div className="full-background">
     <Router>
       <Routes>
@@ -26,6 +28,7 @@ function App() {
       </Routes>
     </Router>
     </div>
+    </CestaProvider>
   );
 }
 

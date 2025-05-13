@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useCesta } from '../Contextos/CestaContext'; // Importar el hook useCesta
 
 const Tienda = () => {
   const [productos, setProductos] = useState([]);
@@ -10,14 +11,28 @@ const Tienda = () => {
   const [categorias, setCategorias] = useState([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todas');
   const [imagenError, setImagenError] = useState({});
+  const [showCesta, setShowCesta] = useState(false); // Estado para mostrar/ocultar la cesta
   const navigate = useNavigate();
   const API_URL = 'http://localhost:3000';
+  
+  // Usar el contexto de la cesta
+  const { cesta, añadirACesta, eliminarDeCesta, vaciarCesta } = useCesta();
+
+  // Calcular el total de la cesta
+  const calcularTotal = () => {
+    return cesta.reduce((total, item) => total + (item.PrecioProducto * item.cantidad), 0).toFixed(2);
+  };
+
+  // Calcular el número total de items en la cesta
+  const calcularCantidadItems = () => {
+    return cesta.reduce((total, item) => total + item.cantidad, 0);
+  };
 
   useEffect(() => {
     const fetchProductos = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/productos`); // Cambiado a /productos
+        const response = await axios.get(`${API_URL}/productos`);
         setProductos(response.data);
 
         // Extraer categorías únicas (tipos) de productos
@@ -45,26 +60,47 @@ const Tienda = () => {
 
   const getImageUrl = (producto) => {
     if (imagenError[producto.ID_Producto]) {
-      return 'https://via.placeholder.com/200x200?text=Imagen+no+disponible'; // Placeholder si hay error
+      return 'https://via.placeholder.com/200x200?text=Imagen+no+disponible';
     }
-    // Usar el endpoint para obtener la imagen del producto
-    // Añadimos timestamp para evitar caché del navegador
     return `${API_URL}/productos/imagen/${producto.ID_Producto}?t=${new Date().getTime()}`;
   };
 
   const handleComprar = (producto) => {
-    // Verificar stock antes de comprar
+    // Verificar stock antes de añadir a la cesta
     if (producto.StockActual <= 0) {
       alert(`Lo sentimos, ${producto.Nombre} no está disponible en este momento.`);
       return;
     }
 
-    alert(`Has comprado: ${producto.Nombre}`);
-    // Aquí implementarías la lógica para procesar la compra
+    // Añadir a la cesta
+    añadirACesta(producto);
+    
+    // Mostrar mensaje de confirmación
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification bg-success text-white p-3 rounded-3 shadow';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '1050';
+    toast.innerHTML = `<div class="d-flex align-items-center">
+      <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+      <span>¡${producto.Nombre} añadido a la cesta!</span>
+    </div>`;
+    
+    document.body.appendChild(toast);
+    
+    // Eliminar el toast después de 3 segundos
+    setTimeout(() => {
+      document.body.removeChild(toast);
+    }, 3000);
   };
 
   const toggleProfileMenu = () => {
     setShowProfileMenu(!showProfileMenu);
+  };
+
+  const toggleCesta = () => {
+    setShowCesta(!showCesta);
   };
 
   const filtrarProductos = () => {
@@ -72,6 +108,18 @@ const Tienda = () => {
       return productos;
     }
     return productos.filter(producto => producto.Tipo === categoriaSeleccionada);
+  };
+
+  const realizarPedido = () => {
+    if (cesta.length === 0) {
+      alert('La cesta está vacía');
+      return;
+    }
+    
+    // Aquí implementarías la lógica para procesar el pedido
+    alert('¡Pedido realizado con éxito!');
+    vaciarCesta();
+    setShowCesta(false);
   };
 
   if (loading) {
@@ -121,6 +169,20 @@ const Tienda = () => {
             Tu Tienda de Al Lao
           </a>
           <div className="ms-auto d-flex align-items-center">
+            {/* Botón de la cesta */}
+            <button 
+              className="btn btn-outline-light rounded-pill me-2 position-relative" 
+              onClick={toggleCesta}
+            >
+              <i className="bi bi-cart-fill"></i>
+              {calcularCantidadItems() > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {calcularCantidadItems()}
+                </span>
+              )}
+            </button>
+            
+            {/* Menú de usuario */}
             <div className="dropdown">
               <button 
                 className="btn btn-outline-light rounded-pill d-flex align-items-center px-3" 
@@ -152,6 +214,151 @@ const Tienda = () => {
           </div>
         </div>
       </nav>
+
+      {/* Modal de la cesta */}
+      {showCesta && (
+        <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
+      )}
+      
+      <div className={`modal fade ${showCesta ? 'show d-block' : ''}`} tabIndex="-1" style={{ zIndex: 1050 }}>
+        <div className="modal-dialog modal-dialog-centered modal-lg">
+          <div className="modal-content shadow-lg border-0">
+            <div className="modal-header bg-primary text-white">
+              <h5 className="modal-title">
+                <i className="bi bi-cart-fill me-2"></i>
+                Mi Cesta
+              </h5>
+              <button 
+                type="button" 
+                className="btn-close btn-close-white" 
+                onClick={toggleCesta}
+              ></button>
+            </div>
+            <div className="modal-body">
+              {cesta.length > 0 ? (
+                <>
+                  <div className="table-responsive">
+                    <table className="table table-hover align-middle">
+                      <thead>
+                        <tr>
+                          <th scope="col" width="80">Imagen</th>
+                          <th scope="col">Producto</th>
+                          <th scope="col" className="text-center">Cantidad</th>
+                          <th scope="col" className="text-end">Precio</th>
+                          <th scope="col" className="text-end">Subtotal</th>
+                          <th scope="col" width="50"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cesta.map((item) => (
+                          <tr key={item.ID_Producto}>
+                            <td>
+                              <img 
+                                src={getImageUrl(item)} 
+                                alt={item.Nombre} 
+                                className="img-fluid rounded" 
+                                style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                              />
+                            </td>
+                            <td>
+                              <div className="fw-bold">{item.Nombre}</div>
+                              <div className="small text-muted">{item.Tipo}</div>
+                            </td>
+                            <td className="text-center">
+                              <div className="d-flex align-items-center justify-content-center">
+                                <button 
+                                  className="btn btn-sm btn-outline-primary" 
+                                  onClick={() => añadirACesta({...item, cantidad: -1})}
+                                  disabled={item.cantidad <= 1}
+                                >
+                                  <i className="bi bi-dash"></i>
+                                </button>
+                                <span className="mx-2 fw-bold">{item.cantidad}</span>
+                                <button 
+                                  className="btn btn-sm btn-outline-primary" 
+                                  onClick={() => añadirACesta(item)}
+                                  disabled={item.cantidad >= item.StockActual}
+                                >
+                                  <i className="bi bi-plus"></i>
+                                </button>
+                              </div>
+                            </td>
+                            <td className="text-end">
+                              ${parseFloat(item.PrecioProducto).toFixed(2)}
+                            </td>
+                            <td className="text-end fw-bold">
+                              ${(item.PrecioProducto * item.cantidad).toFixed(2)}
+                            </td>
+                            <td>
+                              <button 
+                                className="btn btn-sm btn-outline-danger" 
+                                onClick={() => eliminarDeCesta(item.ID_Producto)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded-3">
+                    <div>
+                      <button 
+                        className="btn btn-outline-danger" 
+                        onClick={vaciarCesta}
+                      >
+                        <i className="bi bi-trash me-2"></i>
+                        Vaciar Cesta
+                      </button>
+                    </div>
+                    <div className="text-end">
+                      <div className="fs-5">
+                        Total: <span className="fw-bold text-primary">${calcularTotal()}</span>
+                      </div>
+                      <div className="text-muted small">IVA incluido</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-5">
+                  <i className="bi bi-cart-x display-1 text-muted"></i>
+                  <h3 className="mt-3">Tu cesta está vacía</h3>
+                  <p className="text-muted">
+                    Añade productos a tu cesta para realizar un pedido
+                  </p>
+                  <button 
+                    className="btn btn-primary mt-2" 
+                    onClick={toggleCesta}
+                  >
+                    <i className="bi bi-shop me-2"></i>
+                    Seguir comprando
+                  </button>
+                </div>
+              )}
+            </div>
+            {cesta.length > 0 && (
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={toggleCesta}
+                >
+                  Seguir comprando
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={realizarPedido}
+                >
+                  <i className="bi bi-check-circle me-2"></i>
+                  Realizar Pedido
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="container my-4 flex-grow-1">
@@ -187,7 +394,7 @@ const Tienda = () => {
                 <div
                   className="product-image-container position-relative"
                   style={{ height: '250px', cursor: 'pointer' }}
-                  onClick={() => navigate(`/producto/${producto.ID_Producto}`)} // Redirigir al detalle
+                  onClick={() => navigate(`/producto/${producto.ID_Producto}`)}
                 >
                   <img
                     src={getImageUrl(producto)}
@@ -206,7 +413,7 @@ const Tienda = () => {
                     <h5
                       className="card-title mb-0 fs-5 fw-bold text-primary"
                       style={{ cursor: 'pointer' }}
-                      onClick={() => navigate(`/producto/${producto.ID_Producto}`)} // Redirigir al detalle
+                      onClick={() => navigate(`/producto/${producto.ID_Producto}`)}
                     >
                       {producto.Nombre}
                     </h5>
@@ -229,23 +436,33 @@ const Tienda = () => {
                       {producto.StockActual > 0 ? `Stock: ${producto.StockActual}` : 'Sin stock'}
                     </span>
                   </div>
-                  <button
-                    className={`btn ${
-                      producto.StockActual > 0 ? 'btn-primary' : 'btn-secondary'
-                    } btn-lg w-100 mt-auto py-2 rounded-pill`}
-                    onClick={() => handleComprar(producto)}
-                    disabled={producto.StockActual <= 0}
-                  >
-                    {producto.StockActual > 0 ? (
-                      <>
-                        <i className="bi bi-cart-plus me-2"></i>Comprar ahora
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-exclamation-circle me-2"></i>No disponible
-                      </>
-                    )}
-                  </button>
+                  <div className="d-flex gap-2">
+                    <button
+                      className={`btn ${
+                        producto.StockActual > 0 ? 'btn-outline-primary' : 'btn-outline-secondary'
+                      } flex-grow-1 py-2 rounded-pill`}
+                      onClick={() => navigate(`/producto/${producto.ID_Producto}`)}
+                    >
+                      <i className="bi bi-eye me-2"></i>Ver detalle
+                    </button>
+                    <button
+                      className={`btn ${
+                        producto.StockActual > 0 ? 'btn-primary' : 'btn-secondary'
+                      } flex-grow-1 py-2 rounded-pill`}
+                      onClick={() => handleComprar(producto)}
+                      disabled={producto.StockActual <= 0}
+                    >
+                      {producto.StockActual > 0 ? (
+                        <>
+                          <i className="bi bi-cart-plus me-2"></i>Añadir
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-exclamation-circle me-2"></i>No disponible
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -264,6 +481,25 @@ const Tienda = () => {
         )}
       </div>
     </div>
+
+      {/* Floater para mostrar cantidad de productos en la cesta (visible en móvil) */}
+      {calcularCantidadItems() > 0 && (
+        <div 
+          className="position-fixed d-md-block d-lg-none bottom-0 end-0 mb-4 me-4"
+          style={{ zIndex: 1030 }}
+        >
+          <button 
+            className="btn btn-primary btn-lg rounded-circle shadow-lg d-flex align-items-center justify-content-center position-relative"
+            style={{ width: '60px', height: '60px' }}
+            onClick={toggleCesta}
+          >
+            <i className="bi bi-cart-fill fs-4"></i>
+            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {calcularCantidadItems()}
+            </span>
+          </button>
+        </div>
+      )}
       
       {/* Footer */}
       <footer className="bg-primary bg-gradient text-white py-4 mt-auto">
