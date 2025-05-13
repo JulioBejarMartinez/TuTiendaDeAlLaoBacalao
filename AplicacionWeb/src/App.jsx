@@ -8,6 +8,7 @@ import 'bootswatch/dist/brite/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Dashboard from './Paginas/Dashboard';
 import Tienda from './Paginas/Tienda';
+import DetalleProducto from './Paginas/DetalleProducto'; 
 import './App.css'
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path="/registro" element={<Registro />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tienda" element={<Tienda />} />
+        <Route path="/producto/:id" element={<DetalleProducto />} />
       </Routes>
     </Router>
     </div>

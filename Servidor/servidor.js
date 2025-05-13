@@ -636,6 +636,35 @@ app.get('/productos', (req, res) => {
 });
 
 /**
+ * Obtiene los detalles de un producto específico según su ID
+ * 
+ * @route GET /productos/:id
+ * @param {int} id - ID del producto
+ * @returns {Object} - Detalles del producto
+ * 
+ * NOTA: Este endpoint devuelve todos los datos del producto solicitado.
+ * Asegúrate de manejar adecuadamente los errores en el cliente.
+ */
+app.get('/productos/:id', (req, res) => {
+  const { id } = req.params;
+
+  const query = 'SELECT * FROM Productos WHERE ID_Producto = ?';
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('Error al obtener el producto:', err);
+      return res.status(500).json({ error: 'Error al obtener el producto' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    res.json(results[0]); // Devolver el primer resultado (único producto)
+  });
+});
+
+/**
  * Obtiene la imagen de un producto según su ID
  * 
  * @route GET /productos/imagen/:id

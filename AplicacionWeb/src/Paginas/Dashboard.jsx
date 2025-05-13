@@ -98,11 +98,20 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-wrapper">
+    <div className="dashboard-wrapper min-vh-100 d-flex flex-column bg-light">
+      {/* Logo y Header */}
+      <div className="container-fluid py-4 bg-white text-center border-bottom">
+        <img 
+          src="/TuTiendaDeAlLaoLogo.png" 
+          alt="TuTiendaDeAlLao" 
+          className="img-fluid" 
+          style={{ maxHeight: '120px' }}
+        />
+      </div>
       {/* Navbar */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+      <nav className="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
         <div className="container">
-          <a className="navbar-brand" href="#!">
+          <a className="navbar-brand fw-bold" href="#!">
             <i className="bi bi-speedometer2 me-2"></i>
             Mi Portal
           </a>
@@ -110,16 +119,15 @@ const Dashboard = () => {
           <div className="ms-auto d-flex align-items-center">
             <div className="dropdown">
               <button 
-                className="btn btn-outline-light rounded-pill d-flex align-items-center" 
+                className="btn btn-outline-light rounded-pill d-flex align-items-center px-3" 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
               >
-                <div className="avatar me-2">
+                <div className="avatar me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
                   {cliente.Nombre.charAt(0).toUpperCase()}
                 </div>
                 <span className="d-none d-md-inline">{cliente.Nombre}</span>
                 <i className="bi bi-chevron-down ms-2"></i>
               </button>
-              
               {showProfileMenu && (
                 <div className="dropdown-menu show dropdown-menu-end shadow">
                   <div className="dropdown-header">
@@ -142,24 +150,27 @@ const Dashboard = () => {
       </nav>
 
       {/* Main Content */}
-      <div className="container my-4">
-        <div className="row">
-          <div className="col-lg-4 mb-4">
-            <div className="card border-0 shadow-sm">
-              <div className="card-body text-center">
-                <div className="avatar-large mx-auto mb-3">
+      <div className="container my-4 flex-grow-1">
+        <h1 className="text-center mb-4 fw-bold text-primary">Mi Perfil</h1>
+        <div className="row g-4">
+          {/* Perfil del usuario */}
+          <div className="col-lg-4">
+            <div className="card h-100 border-0 shadow-lg rounded-3 overflow-hidden">
+              <div className="card-body text-center p-4">
+                <div className="avatar-large mx-auto mb-3 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '100px', height: '100px', fontSize: '2rem' }}>
                   {cliente.Nombre.charAt(0).toUpperCase()}
                 </div>
-                <h3 className="card-title">{cliente.Nombre}</h3>
-                <p className="text-muted mb-3">{cliente.Email}</p>
+                <h5 className="card-title mb-0 fs-5 fw-bold text-primary">{cliente.Nombre}</h5>
+                <p className="card-text text-muted">{cliente.Email}</p>
               </div>
             </div>
           </div>
-          
+
+          {/* Formulario de actualización */}
           <div className="col-lg-8">
-            <div className="card border-0 shadow-sm">
-              <div className="card-body">
-                <h5 className="card-title">Actualizar información</h5>
+            <div className="card h-100 border-0 shadow-lg rounded-3 overflow-hidden">
+              <div className="card-body p-4">
+                <h5 className="card-title mb-4 fw-bold text-primary">Actualizar información</h5>
                 {successMessage && (
                   <div className="alert alert-success" role="alert">
                     {successMessage}
@@ -193,13 +204,30 @@ const Dashboard = () => {
                       onChange={handleInputChange} 
                     />
                   </div>
-                  <button type="submit" className="btn btn-primary">Guardar cambios</button>
+                  <button type="submit" className="btn btn-primary btn-lg w-100 py-2 rounded-pill">Guardar cambios</button>
                 </form>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-primary bg-gradient text-white py-4 mt-auto">
+        <div className="container">
+          <div className="row">
+            <div className="col text-center">
+              <p className="mb-0 fw-light">
+                © {new Date().getFullYear()} Tu Tienda de Al Lao
+                <span className="mx-2">·</span>
+                <a href="/privacidad" className="text-white text-decoration-none">Privacidad</a>
+                <span className="mx-2">·</span>
+                <a href="/terminos" className="text-white text-decoration-none">Términos</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

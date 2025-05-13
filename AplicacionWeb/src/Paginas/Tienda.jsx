@@ -180,68 +180,90 @@ const Tienda = () => {
         
         {/* Productos */}
         <div className="row g-4">
-          {filtrarProductos().length > 0 ? (
-            filtrarProductos().map((producto) => (
-              <div className="col-sm-6 col-md-4 col-lg-3" key={producto.ID_Producto}>
-                <div className="card h-100 border-0 shadow-lg rounded-3 overflow-hidden hover-shadow transition-all">
-                  <div className="product-image-container position-relative" style={{ height: '250px' }}>
-                    <img 
-                      src={getImageUrl(producto)} 
-                      alt={producto.Nombre} 
-                      className="img-fluid h-100 w-100 object-fit-cover"
-                      onError={() => handleImageError(producto.ID_Producto)}
-                    />
-                    {producto.StockActual <= 0 && (
-                      <div className="agotado-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50">
-                        <span className="badge bg-danger fs-5 p-2 rounded-pill">Agotado</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-body d-flex flex-column p-4">
-                    <div className="d-flex justify-content-between align-items-start mb-3">
-                      <h5 className="card-title mb-0 fs-5 fw-bold text-primary">{producto.Nombre}</h5>
-                      <span className="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill">
-                        {producto.Tipo}
-                      </span>
+        {filtrarProductos().length > 0 ? (
+          filtrarProductos().map((producto) => (
+            <div className="col-sm-6 col-md-4 col-lg-3" key={producto.ID_Producto}>
+              <div className="card h-100 border-0 shadow-lg rounded-3 overflow-hidden hover-shadow transition-all">
+                <div
+                  className="product-image-container position-relative"
+                  style={{ height: '250px', cursor: 'pointer' }}
+                  onClick={() => navigate(`/producto/${producto.ID_Producto}`)} // Redirigir al detalle
+                >
+                  <img
+                    src={getImageUrl(producto)}
+                    alt={producto.Nombre}
+                    className="img-fluid h-100 w-100 object-fit-cover"
+                    onError={() => handleImageError(producto.ID_Producto)}
+                  />
+                  {producto.StockActual <= 0 && (
+                    <div className="agotado-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50">
+                      <span className="badge bg-danger fs-5 p-2 rounded-pill">Agotado</span>
                     </div>
-                    <p className="card-text text-muted flex-grow-1 mb-3">{producto.Descripcion}</p>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <p className="card-text fw-bold text-primary mb-0 fs-5">
-                        ${parseFloat(producto.PrecioProducto).toFixed(2)}
-                      </p>
-                      <span className={`badge ${producto.StockActual > 0 ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'} rounded-pill`}>
-                        {producto.StockActual > 0 ? `Stock: ${producto.StockActual}` : 'Sin stock'}
-                      </span>
-                    </div>
-                    <button 
-                      className={`btn ${producto.StockActual > 0 ? 'btn-primary' : 'btn-secondary'} btn-lg w-100 mt-auto py-2 rounded-pill`} 
-                      onClick={() => handleComprar(producto)}
-                      disabled={producto.StockActual <= 0}
+                  )}
+                </div>
+                <div className="card-body d-flex flex-column p-4">
+                  <div className="d-flex justify-content-between align-items-start mb-3">
+                    <h5
+                      className="card-title mb-0 fs-5 fw-bold text-primary"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => navigate(`/producto/${producto.ID_Producto}`)} // Redirigir al detalle
                     >
-                      {producto.StockActual > 0 ? (
-                        <><i className="bi bi-cart-plus me-2"></i>Comprar ahora</>
-                      ) : (
-                        <><i className="bi bi-exclamation-circle me-2"></i>No disponible</>
-                      )}
-                    </button>
+                      {producto.Nombre}
+                    </h5>
+                    <span className="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill">
+                      {producto.Tipo}
+                    </span>
                   </div>
+                  <p className="card-text text-muted flex-grow-1 mb-3">{producto.Descripcion}</p>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <p className="card-text fw-bold text-primary mb-0 fs-5">
+                      ${parseFloat(producto.PrecioProducto).toFixed(2)}
+                    </p>
+                    <span
+                      className={`badge ${
+                        producto.StockActual > 0
+                          ? 'bg-success bg-opacity-10 text-success'
+                          : 'bg-danger bg-opacity-10 text-danger'
+                      } rounded-pill`}
+                    >
+                      {producto.StockActual > 0 ? `Stock: ${producto.StockActual}` : 'Sin stock'}
+                    </span>
+                  </div>
+                  <button
+                    className={`btn ${
+                      producto.StockActual > 0 ? 'btn-primary' : 'btn-secondary'
+                    } btn-lg w-100 mt-auto py-2 rounded-pill`}
+                    onClick={() => handleComprar(producto)}
+                    disabled={producto.StockActual <= 0}
+                  >
+                    {producto.StockActual > 0 ? (
+                      <>
+                        <i className="bi bi-cart-plus me-2"></i>Comprar ahora
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-exclamation-circle me-2"></i>No disponible
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="col-12 text-center py-5">
-              <i className="bi bi-emoji-frown display-1 text-muted"></i>
-              <h3 className="mt-3 text-primary">No hay productos disponibles en esta categoría</h3>
-              <button 
-                className="btn btn-primary btn-lg mt-3 px-4 py-2 rounded-pill"
-                onClick={() => setCategoriaSeleccionada('Todas')}
-              >
-                <i className="bi bi-arrow-left me-2"></i>Ver todos los productos
-              </button>
             </div>
-          )}
-        </div>
+          ))
+        ) : (
+          <div className="col-12 text-center py-5">
+            <i className="bi bi-emoji-frown display-1 text-muted"></i>
+            <h3 className="mt-3 text-primary">No hay productos disponibles en esta categoría</h3>
+            <button
+              className="btn btn-primary btn-lg mt-3 px-4 py-2 rounded-pill"
+              onClick={() => setCategoriaSeleccionada('Todas')}
+            >
+              <i className="bi bi-arrow-left me-2"></i>Ver todos los productos
+            </button>
+          </div>
+        )}
       </div>
+    </div>
       
       {/* Footer */}
       <footer className="bg-primary bg-gradient text-white py-4 mt-auto">
