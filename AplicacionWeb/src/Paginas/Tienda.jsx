@@ -102,30 +102,33 @@ const Tienda = () => {
   }
 
   return (
-    <div className="tienda-wrapper min-vh-100 d-flex flex-column" style={{ backgroundColor: '#f0f2f5' }}>
-      {/* Logo de la empresa */}
-    <div className="container-fluid py-3 bg-light text-center" style={{ backgroundColor: '#f8f9fa' }}>
-      <img 
-        src="/TuTiendaDeAlLaoLogo.png" 
-        alt="TuTiendaDeAlLao" 
-        className="img-fluid" 
-        style={{ maxHeight: '120px' }}
-      />
-    </div>
+    <div className="tienda-wrapper min-vh-100 d-flex flex-column bg-light">
+      {/* Logo y Header */}
+      <div className="container-fluid py-4 bg-white text-center border-bottom">
+        <img 
+          src="/TuTiendaDeAlLaoLogo.png" 
+          alt="TuTiendaDeAlLao" 
+          className="img-fluid" 
+          style={{ maxHeight: '120px' }}
+        />
+      </div>
+
       {/* Navbar */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+      <nav className="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
         <div className="container">
-          <a className="navbar-brand" href="#!">
+          <a className="navbar-brand fw-bold" href="#!">
             <i className="bi bi-shop me-2"></i>
-            Tienda
+            Tu Tienda de Al Lao
           </a>
           <div className="ms-auto d-flex align-items-center">
             <div className="dropdown">
               <button 
-                className="btn btn-outline-light rounded-pill d-flex align-items-center" 
+                className="btn btn-outline-light rounded-pill d-flex align-items-center px-3" 
                 onClick={toggleProfileMenu}
               >
-                <div className="avatar me-2">U</div>
+                <div className="avatar me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                  U
+                </div>
                 <span className="d-none d-md-inline">Usuario</span>
                 <i className="bi bi-chevron-down ms-2"></i>
               </button>
@@ -152,76 +155,73 @@ const Tienda = () => {
 
       {/* Main Content */}
       <div className="container my-4 flex-grow-1">
-        <h1 className="text-center mb-4">Tienda</h1>
+        <h1 className="text-center mb-4 fw-bold text-primary">Nuestros Productos</h1>
         
         {/* Filtro por categorías */}
         <div className="row mb-4">
-          <div className="col-lg-6 mx-auto">
-            <div className="d-flex justify-content-center">
-              <div className="btn-group" role="group" aria-label="Filtrar por categoría">
-                {categorias.map((categoria) => (
-                  <button
-                    key={categoria}
-                    type="button"
-                    className={`btn ${categoriaSeleccionada === categoria ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setCategoriaSeleccionada(categoria)}
-                  >
-                    {categoria}
-                  </button>
-                ))}
-              </div>
+          <div className="col-12">
+            <div className="d-flex flex-wrap justify-content-center gap-2">
+              {categorias.map((categoria) => (
+                <button
+                  key={categoria}
+                  className={`btn btn-lg ${
+                    categoriaSeleccionada === categoria 
+                    ? 'btn-primary' 
+                    : 'btn-outline-primary border-2'
+                  } rounded-pill px-4`}
+                  onClick={() => setCategoriaSeleccionada(categoria)}
+                >
+                  {categoria}
+                </button>
+              ))}
             </div>
           </div>
         </div>
         
         {/* Productos */}
-        <div className="row">
+        <div className="row g-4">
           {filtrarProductos().length > 0 ? (
             filtrarProductos().map((producto) => (
-              <div className="col-sm-6 col-md-4 col-lg-3 mb-4" key={producto.ID_Producto}>
-                <div className="card h-100 border-0 shadow-sm hover-elevation transition-all">
-                  <div className="product-image-container" style={{ height: '200px', position: 'relative', overflow: 'hidden' }}>
+              <div className="col-sm-6 col-md-4 col-lg-3" key={producto.ID_Producto}>
+                <div className="card h-100 border-0 shadow-lg rounded-3 overflow-hidden hover-shadow transition-all">
+                  <div className="product-image-container position-relative" style={{ height: '250px' }}>
                     <img 
                       src={getImageUrl(producto)} 
                       alt={producto.Nombre} 
-                      className="card-img-top"
+                      className="img-fluid h-100 w-100 object-fit-cover"
                       onError={() => handleImageError(producto.ID_Producto)}
-                      style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'cover',
-                        transition: 'transform 0.3s ease'
-                      }}
                     />
                     {producto.StockActual <= 0 && (
                       <div className="agotado-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50">
-                        <span className="badge bg-danger fs-5 p-2">Agotado</span>
+                        <span className="badge bg-danger fs-5 p-2 rounded-pill">Agotado</span>
                       </div>
                     )}
                   </div>
-                  <div className="card-body d-flex flex-column">
-                    <div className="d-flex justify-content-between align-items-start mb-1">
-                      <h5 className="card-title mb-0">{producto.Nombre}</h5>
-                      <span className="badge bg-secondary">{producto.Tipo}</span>
+                  <div className="card-body d-flex flex-column p-4">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <h5 className="card-title mb-0 fs-5 fw-bold text-primary">{producto.Nombre}</h5>
+                      <span className="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill">
+                        {producto.Tipo}
+                      </span>
                     </div>
-                    <p className="card-text text-muted flex-grow-1 mb-2">{producto.Descripcion}</p>
-                    <div className="d-flex justify-content-between align-items-center">
+                    <p className="card-text text-muted flex-grow-1 mb-3">{producto.Descripcion}</p>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
                       <p className="card-text fw-bold text-primary mb-0 fs-5">
                         ${parseFloat(producto.PrecioProducto).toFixed(2)}
                       </p>
-                      <span className="stock-info text-muted small">
+                      <span className={`badge ${producto.StockActual > 0 ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'} rounded-pill`}>
                         {producto.StockActual > 0 ? `Stock: ${producto.StockActual}` : 'Sin stock'}
                       </span>
                     </div>
                     <button 
-                      className={`btn ${producto.StockActual > 0 ? 'btn-primary' : 'btn-secondary'} btn-sm w-100 mt-3`} 
+                      className={`btn ${producto.StockActual > 0 ? 'btn-primary' : 'btn-secondary'} btn-lg w-100 mt-auto py-2 rounded-pill`} 
                       onClick={() => handleComprar(producto)}
                       disabled={producto.StockActual <= 0}
                     >
                       {producto.StockActual > 0 ? (
-                        <><i className="bi bi-cart-plus me-2"></i>Comprar</>
+                        <><i className="bi bi-cart-plus me-2"></i>Comprar ahora</>
                       ) : (
-                        <><i className="bi bi-exclamation-circle me-2"></i>Agotado</>
+                        <><i className="bi bi-exclamation-circle me-2"></i>No disponible</>
                       )}
                     </button>
                   </div>
@@ -231,12 +231,12 @@ const Tienda = () => {
           ) : (
             <div className="col-12 text-center py-5">
               <i className="bi bi-emoji-frown display-1 text-muted"></i>
-              <h3 className="mt-3">No hay productos disponibles en esta categoría</h3>
+              <h3 className="mt-3 text-primary">No hay productos disponibles en esta categoría</h3>
               <button 
-                className="btn btn-primary mt-3"
+                className="btn btn-primary btn-lg mt-3 px-4 py-2 rounded-pill"
                 onClick={() => setCategoriaSeleccionada('Todas')}
               >
-                Ver todos los productos
+                <i className="bi bi-arrow-left me-2"></i>Ver todos los productos
               </button>
             </div>
           )}
@@ -244,11 +244,17 @@ const Tienda = () => {
       </div>
       
       {/* Footer */}
-      <footer className="bg-light py-4 mt-auto">
+      <footer className="bg-primary bg-gradient text-white py-4 mt-auto">
         <div className="container">
           <div className="row">
             <div className="col text-center">
-              <p className="mb-0">© {new Date().getFullYear()} Tu Tienda de Allao - Todos los derechos reservados</p>
+              <p className="mb-0 fw-light">
+                © {new Date().getFullYear()} Tu Tienda de Al Lao
+                <span className="mx-2">·</span>
+                <a href="/privacidad" className="text-white text-decoration-none">Privacidad</a>
+                <span className="mx-2">·</span>
+                <a href="/terminos" className="text-white text-decoration-none">Términos</a>
+              </p>
             </div>
           </div>
         </div>
