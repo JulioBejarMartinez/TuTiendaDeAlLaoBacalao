@@ -648,7 +648,12 @@ app.get('/productos', (req, res) => {
 app.get('/productos/:id', (req, res) => {
   const { id } = req.params;
 
-  const query = 'SELECT * FROM Productos WHERE ID_Producto = ?';
+  // Excluir StockMinimo e ID_Proveedor de la consulta
+  const query = `
+    SELECT ID_Producto, Nombre, Descripcion, PrecioProducto, StockActual, Tipo, ImagenProducto
+    FROM Productos
+    WHERE ID_Producto = ?
+  `;
 
   db.query(query, [id], (err, results) => {
     if (err) {
@@ -663,7 +668,6 @@ app.get('/productos/:id', (req, res) => {
     res.json(results[0]); // Devolver el primer resultado (único producto)
   });
 });
-
 /**
  * Obtiene la imagen de un producto según su ID
  * 

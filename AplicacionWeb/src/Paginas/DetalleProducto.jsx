@@ -111,12 +111,6 @@ const DetalleProducto = () => {
                 <p className="card-text">
                   <strong>Tipo:</strong> {producto.Tipo}
                 </p>
-                <p className="card-text">
-                  <strong>Stock mínimo:</strong> {producto.StockMinimo}
-                </p>
-                <p className="card-text">
-                  <strong>ID del proveedor:</strong> {producto.ID_Proveedor}
-                </p>
                 <button 
                   className={`btn ${producto.StockActual > 0 ? 'btn-primary' : 'btn-secondary'} btn-lg w-100 mt-3 py-2 rounded-pill`} 
                   onClick={() => alert(`Has comprado: ${producto.Nombre}`)}
