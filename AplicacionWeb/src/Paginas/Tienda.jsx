@@ -276,7 +276,7 @@ const Tienda = () => {
                                 <span className="mx-2 fw-bold">{item.cantidad}</span>
                                 <button 
                                   className="btn btn-sm btn-outline-primary" 
-                                  onClick={() => añadirACesta(item)}
+                                  onClick={() => añadirACesta({ ...item, cantidad: 1 })}
                                   disabled={item.cantidad >= item.StockActual}
                                 >
                                   <i className="bi bi-plus"></i>

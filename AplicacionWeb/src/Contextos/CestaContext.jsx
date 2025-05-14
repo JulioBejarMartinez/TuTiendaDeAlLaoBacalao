@@ -7,20 +7,30 @@ const CestaContext = createContext();
 export const CestaProvider = ({ children }) => {
   const [cesta, setCesta] = useState([]);
 
-  // Añadir un producto a la cesta
+  // Añadir o restar un producto de la cesta
   const añadirACesta = (producto) => {
     setCesta((prevCesta) => {
       const productoExistente = prevCesta.find((item) => item.ID_Producto === producto.ID_Producto);
+
       if (productoExistente) {
-        // Incrementar la cantidad si el producto ya está en la cesta
+        // Actualizar la cantidad del producto existente
+        const nuevaCantidad = productoExistente.cantidad + (producto.cantidad || 1);
+
+        if (nuevaCantidad <= 0) {
+          // Eliminar el producto si la cantidad es 0 o menor
+          return prevCesta.filter((item) => item.ID_Producto !== producto.ID_Producto);
+        }
+
+        // Actualizar la cantidad del producto
         return prevCesta.map((item) =>
           item.ID_Producto === producto.ID_Producto
-            ? { ...item, cantidad: item.cantidad + 1 }
+            ? { ...item, cantidad: nuevaCantidad }
             : item
         );
       }
-      // Añadir un nuevo producto a la cesta
-      return [...prevCesta, { ...producto, cantidad: 1 }];
+
+      // Añadir un nuevo producto a la cesta con cantidad inicial
+      return [...prevCesta, { ...producto, cantidad: producto.cantidad || 1 }];
     });
   };
 
