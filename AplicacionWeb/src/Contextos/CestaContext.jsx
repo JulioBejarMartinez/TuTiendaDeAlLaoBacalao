@@ -6,6 +6,7 @@ const CestaContext = createContext();
 // Proveedor del contexto
 export const CestaProvider = ({ children }) => {
   const [cesta, setCesta] = useState([]);
+  const [showCesta, setShowCesta] = useState(false); // Estado para mostrar/ocultar el modal de la cesta
 
   // Añadir o restar un producto de la cesta
   const añadirACesta = (producto) => {
@@ -13,15 +14,12 @@ export const CestaProvider = ({ children }) => {
       const productoExistente = prevCesta.find((item) => item.ID_Producto === producto.ID_Producto);
 
       if (productoExistente) {
-        // Actualizar la cantidad del producto existente
         const nuevaCantidad = productoExistente.cantidad + (producto.cantidad || 1);
 
         if (nuevaCantidad <= 0) {
-          // Eliminar el producto si la cantidad es 0 o menor
           return prevCesta.filter((item) => item.ID_Producto !== producto.ID_Producto);
         }
 
-        // Actualizar la cantidad del producto
         return prevCesta.map((item) =>
           item.ID_Producto === producto.ID_Producto
             ? { ...item, cantidad: nuevaCantidad }
@@ -29,7 +27,6 @@ export const CestaProvider = ({ children }) => {
         );
       }
 
-      // Añadir un nuevo producto a la cesta con cantidad inicial
       return [...prevCesta, { ...producto, cantidad: producto.cantidad || 1 }];
     });
   };
@@ -44,8 +41,47 @@ export const CestaProvider = ({ children }) => {
     setCesta([]);
   };
 
+  // Mostrar/ocultar el modal de la cesta
+  const toggleCesta = () => {
+    setShowCesta(!showCesta);
+  };
+
+  // Calcular el total de la cesta
+  const calcularTotal = () => {
+    return cesta.reduce((total, item) => total + item.PrecioProducto * item.cantidad, 0).toFixed(2);
+  };
+
+  // Calcular el número total de items en la cesta
+  const calcularCantidadItems = () => {
+    return cesta.reduce((total, item) => total + item.cantidad, 0);
+  };
+
+  // Realizar pedido
+  const realizarPedido = () => {
+    if (cesta.length === 0) {
+      alert('La cesta está vacía');
+      return;
+    }
+
+    alert('¡Pedido realizado con éxito!');
+    vaciarCesta();
+    setShowCesta(false);
+  };
+
   return (
-    <CestaContext.Provider value={{ cesta, añadirACesta, eliminarDeCesta, vaciarCesta }}>
+    <CestaContext.Provider
+      value={{
+        cesta,
+        añadirACesta,
+        eliminarDeCesta,
+        vaciarCesta,
+        showCesta,
+        toggleCesta,
+        calcularTotal,
+        calcularCantidadItems,
+        realizarPedido,
+      }}
+    >
       {children}
     </CestaContext.Provider>
   );
