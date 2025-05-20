@@ -4,6 +4,7 @@
  */
 import dotenv from 'dotenv';
 dotenv.config({ path: './Servidor/.env' }); // Cargar las variables de entorno
+import { enviarEmailBienvenida } from './emailServicio.js';
 
 import express from 'express';
 import mysql from 'mysql';
@@ -346,6 +347,25 @@ app.delete('/tabla/:nombre/:id', (req, res) => {
  * sensible o lógica crítica para la aplicación.                         *
  **************************************************************************/
 
+app.post('/registro', async (req, res) => {
+  const { nombre, apellido, email, telefono, contrasena } = req.body;
+  // Validaciones aquí...
+
+  // Insertar usuario en la base de datos
+  const query = `INSERT INTO Clientes (Nombre, Apellido, Contrasena, Email, Telefono) VALUES (?, ?, ?, ?, ?)`;
+  db.query(query, [nombre, apellido, contrasena, email, telefono], async (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al registrar el usuario' });
+    }
+    // Enviar email de bienvenida
+    try {
+      await enviarEmailBienvenida(email, nombre);
+    } catch (e) {
+      console.error('No se pudo enviar el email de bienvenida:', e);
+    }
+    res.json({ message: 'Usuario registrado correctamente' });
+  });
+});
 
 /**
  * Autentica a un usuario mediante su correo electrónico y contraseña
@@ -668,6 +688,7 @@ app.get('/productos/:id', (req, res) => {
     res.json(results[0]); // Devolver el primer resultado (único producto)
   });
 });
+
 /**
  * Obtiene la imagen de un producto según su ID
  * 

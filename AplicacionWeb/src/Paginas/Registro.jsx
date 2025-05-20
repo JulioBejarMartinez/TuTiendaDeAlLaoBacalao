@@ -47,7 +47,7 @@ const Registro = () => {
       delete dataToSend.confirmarContrasena;
 
       // Enviar los datos al servidor
-      const response = await axios.post('http://localhost:3000/tabla/Clientes', dataToSend);
+      const response = await axios.post('http://localhost:3000/registro', dataToSend);
       setSuccess('¡Registro exitoso! Redirigiendo al inicio de sesión...');
       
       // Redirigir después de un tiempo
