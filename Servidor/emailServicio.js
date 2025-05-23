@@ -15,14 +15,15 @@ const transporter = nodemailer.createTransport({
 });
 
 // Función genérica para enviar emails
-export const enviarEmail = async (to, subject, text, html) => {
+export const enviarEmail = async (to, subject, text, html, attachments = []) => {
   try {
     const mailOptions = {
       from: `"${process.env.EMAIL_SENDER_NAME || 'Tu Tienda de Al Lao'}" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       text,
-      html: html || text
+      html: html || text,
+      attachments
     };
     const info = await transporter.sendMail(mailOptions);
     console.log('Email enviado:', info.messageId);

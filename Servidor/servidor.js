@@ -5,7 +5,9 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: './Servidor/.env' }); // Cargar las variables de entorno
 import { enviarEmailBienvenida } from './emailServicio.js';
+import { generarPDFPedido } from './pdfServicio.js';
 
+import fs from 'fs';
 import express from 'express';
 import mysql from 'mysql';
 import cors from 'cors';
@@ -731,6 +733,80 @@ app.get('/productos/imagen/:id', (req, res) => {
     });
   });
 });
+
+/**
+ * Registra una compra (venta) de productos por parte de un cliente
+ * 
+ * @route POST /realizar-pedido
+ * @body {int} clienteId - ID del cliente
+ * @body {Array} productos - [{ ID_Producto, cantidad }]
+ * @body {decimal} total - Total de la compra
+ * @returns {Object} - Mensaje de éxito y datos de la venta
+ */
+app.post('/realizar-pedido', (req, res) => {
+  const { clienteId, productos, total } = req.body;
+  const empleadoId = 1; // Puedes obtenerlo del token si tienes autenticación de empleados
+
+  if (!clienteId || !Array.isArray(productos) || productos.length === 0 || !total) {
+    return res.status(400).json({ error: 'Datos incompletos para registrar la venta' });
+  }
+
+  const fechaHora = new Date();
+
+  // 1. Insertar en Ventas
+  const ventaQuery = `
+    INSERT INTO Ventas (FechaHora, ID_Empleado, ID_Cliente, Total)
+    VALUES (?, ?, ?, ?)
+  `;
+  db.query(ventaQuery, [fechaHora, empleadoId, clienteId, total], (err, ventaResult) => {
+    if (err) {
+      console.error('Error al registrar la venta:', err);
+      return res.status(500).json({ error: 'Error al registrar la venta' });
+    }
+    const ventaId = ventaResult.insertId;
+
+    // 2. Insertar detalles de venta y actualizar stock
+    const detalleQueries = productos.map(prod => {
+      return new Promise((resolve, reject) => {
+        // Insertar detalle
+        const detalleQuery = `
+          INSERT INTO DetallesVenta (ID_Venta, ID_Producto, Cantidad)
+          VALUES (?, ?, ?)
+        `;
+        db.query(detalleQuery, [ventaId, prod.ID_Producto, prod.cantidad], (err) => {
+          if (err) return reject(err);
+
+          // Actualizar stock
+          const stockQuery = `
+            UPDATE Productos SET StockActual = StockActual - ?
+            WHERE ID_Producto = ? AND StockActual >= ?
+          `;
+          db.query(stockQuery, [prod.cantidad, prod.ID_Producto, prod.cantidad], (err, stockResult) => {
+            if (err) return reject(err);
+            if (stockResult.affectedRows === 0) {
+              return reject(new Error(`Stock insuficiente para el producto ID ${prod.ID_Producto}`));
+            }
+            resolve();
+          });
+        });
+      });
+    });
+
+    Promise.all(detalleQueries)
+      .then(() => {
+        res.json({
+          message: 'Pedido registrado correctamente',
+          ventaId,
+          productos
+        });
+      })
+      .catch(error => {
+        console.error('Error en detalles de venta:', error);
+        res.status(500).json({ error: error.message || 'Error al registrar detalles de la venta' });
+      });
+  });
+});
+
 
 // Iniciar el servidor HTTP
 app.listen(port, () => {
