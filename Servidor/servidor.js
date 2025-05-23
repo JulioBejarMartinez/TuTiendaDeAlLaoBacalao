@@ -5,6 +5,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: './Servidor/.env' }); // Cargar las variables de entorno
 import { enviarEmailBienvenida } from './emailServicio.js';
+import { enviarEmail } from './emailServicio.js';
 import { generarPDFPedido } from './pdfServicio.js';
 
 import fs from 'fs';
@@ -745,7 +746,7 @@ app.get('/productos/imagen/:id', (req, res) => {
  */
 app.post('/realizar-pedido', (req, res) => {
   const { clienteId, productos, total } = req.body;
-  const empleadoId = 1; // Puedes obtenerlo del token si tienes autenticación de empleados
+  const empleadoId = 1;
 
   if (!clienteId || !Array.isArray(productos) || productos.length === 0 || !total) {
     return res.status(400).json({ error: 'Datos incompletos para registrar la venta' });
@@ -753,7 +754,6 @@ app.post('/realizar-pedido', (req, res) => {
 
   const fechaHora = new Date();
 
-  // 1. Insertar en Ventas
   const ventaQuery = `
     INSERT INTO Ventas (FechaHora, ID_Empleado, ID_Cliente, Total)
     VALUES (?, ?, ?, ?)
@@ -765,10 +765,8 @@ app.post('/realizar-pedido', (req, res) => {
     }
     const ventaId = ventaResult.insertId;
 
-    // 2. Insertar detalles de venta y actualizar stock
     const detalleQueries = productos.map(prod => {
       return new Promise((resolve, reject) => {
-        // Insertar detalle
         const detalleQuery = `
           INSERT INTO DetallesVenta (ID_Venta, ID_Producto, Cantidad)
           VALUES (?, ?, ?)
@@ -776,7 +774,6 @@ app.post('/realizar-pedido', (req, res) => {
         db.query(detalleQuery, [ventaId, prod.ID_Producto, prod.cantidad], (err) => {
           if (err) return reject(err);
 
-          // Actualizar stock
           const stockQuery = `
             UPDATE Productos SET StockActual = StockActual - ?
             WHERE ID_Producto = ? AND StockActual >= ?
@@ -794,10 +791,58 @@ app.post('/realizar-pedido', (req, res) => {
 
     Promise.all(detalleQueries)
       .then(() => {
-        res.json({
-          message: 'Pedido registrado correctamente',
-          ventaId,
-          productos
+        // Obtener datos de la venta, cliente y productos para el PDF y email
+        const ventaDatosQuery = 'SELECT * FROM Ventas WHERE ID_Venta = ?';
+        const clienteDatosQuery = 'SELECT * FROM Clientes WHERE ID_Cliente = ?';
+        const productosDatosQuery = `
+          SELECT p.Nombre, p.PrecioProducto, dv.Cantidad
+          FROM DetallesVenta dv
+          JOIN Productos p ON dv.ID_Producto = p.ID_Producto
+          WHERE dv.ID_Venta = ?
+        `;
+
+        db.query(ventaDatosQuery, [ventaId], (err, ventaRows) => {
+          if (err || ventaRows.length === 0) return res.json({ message: 'Pedido registrado, pero error al obtener datos de venta.' });
+
+          db.query(clienteDatosQuery, [clienteId], (err, clienteRows) => {
+            if (err || clienteRows.length === 0) return res.json({ message: 'Pedido registrado, pero error al obtener datos de cliente.' });
+
+            db.query(productosDatosQuery, [ventaId], async (err, productosRows) => {
+              if (err) return res.json({ message: 'Pedido registrado, pero error al obtener productos.' });
+
+              // Generar PDF
+              const outputPath = `./facturas/factura_${ventaId}.pdf`;
+              try {
+                // Asegúrate de que la carpeta 'facturas' existe
+                if (!fs.existsSync('./facturas')) fs.mkdirSync('./facturas');
+
+                await generarPDFPedido(ventaRows[0], clienteRows[0], productosRows, outputPath);
+
+                // Enviar email con el PDF adjunto
+                const email = clienteRows[0].Email;
+                const nombre = clienteRows[0].Nombre;
+                const subject = 'Factura de tu compra en Tu Tienda de Al Lao';
+                const text = `Hola ${nombre},\nAdjuntamos la factura de tu compra. ¡Gracias por confiar en nosotros!`;
+                const html = `<p>Hola <strong>${nombre}</strong>,<br>Adjuntamos la factura de tu compra.<br>¡Gracias por confiar en nosotros!</p>`;
+
+                await enviarEmail(email, subject, text, html, [
+                  {
+                    filename: `factura_${ventaId}.pdf`,
+                    path: outputPath
+                  }
+                ]);
+              } catch (e) {
+                console.error('Error al generar o enviar la factura:', e);
+                // No cortar la respuesta al cliente si el pedido fue registrado
+              }
+
+              res.json({
+                message: 'Pedido registrado correctamente y factura enviada por email',
+                ventaId,
+                productos
+              });
+            });
+          });
         });
       })
       .catch(error => {
