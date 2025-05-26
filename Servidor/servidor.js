@@ -354,22 +354,28 @@ app.post('/registro', async (req, res) => {
   const { nombre, apellido, email, telefono, contrasena } = req.body;
   // Validaciones aquí...
 
-  // Insertar usuario en la base de datos
-  const query = `INSERT INTO Clientes (Nombre, Apellido, Contrasena, Email, Telefono) VALUES (?, ?, ?, ?, ?)`;
-  db.query(query, [nombre, apellido, contrasena, email, telefono], async (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al registrar el usuario' });
-    }
-    // Enviar email de bienvenida
-    try {
-      await enviarEmailBienvenida(email, nombre);
-    } catch (e) {
-      console.error('No se pudo enviar el email de bienvenida:', e);
-    }
-    res.json({ message: 'Usuario registrado correctamente' });
-  });
-});
+  try {
+    // Hashear la contraseña antes de guardar
+    const hash = await bcrypt.hash(contrasena, 10);
 
+    // Insertar usuario en la base de datos con la contraseña hasheada
+    const query = `INSERT INTO Clientes (Nombre, Apellido, Contrasena, Email, Telefono) VALUES (?, ?, ?, ?, ?)`;
+    db.query(query, [nombre, apellido, hash, email, telefono], async (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error al registrar el usuario' });
+      }
+      // Enviar email de bienvenida
+      try {
+        await enviarEmailBienvenida(email, nombre);
+      } catch (e) {
+        console.error('No se pudo enviar el email de bienvenida:', e);
+      }
+      res.json({ message: 'Usuario registrado correctamente' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al procesar la contraseña' });
+  }
+});
 /**
  * Autentica a un usuario mediante su correo electrónico y contraseña
  * 
