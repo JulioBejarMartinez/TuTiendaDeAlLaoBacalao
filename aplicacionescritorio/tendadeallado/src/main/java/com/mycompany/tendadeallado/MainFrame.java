@@ -14,14 +14,11 @@ public class MainFrame extends JFrame {
     private JLabel statusBar;
     private String username;
 
-    // Componentes principales
     private MenuBarManager menuBarManager;
     private ToolBarManager toolBarManager;
     private NavigationPanel navigationPanel;
-    private PanelManager panelManager;
     private ThemeManager themeManager;
 
-    // Datos conexión MySQL (modifica estos valores)
     private static final String DB_HOST = "dam2.colexio-karbo.com";
     private static final String DB_PORT = "3333";
     private static final String DB_NAME = "proyecto_lumarsan_jbejar";
@@ -34,7 +31,6 @@ public class MainFrame extends JFrame {
         setupLayout();
         showHomePanel();
 
-        // Probar conexión al iniciar (opcional)
         Connection conn = getDatabaseConnection();
         if (conn != null) {
             try {
@@ -56,7 +52,6 @@ public class MainFrame extends JFrame {
         menuBarManager = new MenuBarManager(this, themeManager);
         toolBarManager = new ToolBarManager(this, username);
         navigationPanel = new NavigationPanel(this);
-        panelManager = new PanelManager(this);
 
         setupMainPanel();
         setupStatusBar();
@@ -91,40 +86,88 @@ public class MainFrame extends JFrame {
         setJMenuBar(menuBarManager.getMenuBar());
     }
 
-    // Métodos públicos para cambiar paneles
     public void showHomePanel() {
-        panelManager.showHomePanel(contentPanel);
+        JPanel panel = new HomePanel();
         updateStatusBar("Inicio - Resumen del sistema");
+        if (themeManager != null) {
+            themeManager.applyThemeToComponent(panel);
+        }
+        setContentPanel(panel);
     }
 
     public void showInventoryPanel() {
-        panelManager.showInventoryPanel(contentPanel);
+        JPanel panel = new InventoryPanel(getStatusBar());
         updateStatusBar("Gestión de Inventario");
+        if (themeManager != null) {
+            themeManager.applyThemeToComponent(panel);
+        }
+        setContentPanel(panel);
     }
 
     public void showSalesPanel() {
-        panelManager.showSalesPanel(contentPanel);
+        JPanel panel = new SalesPanel(getStatusBar());
         updateStatusBar("Gestión de Ventas");
+        if (themeManager != null) {
+            themeManager.applyThemeToComponent(panel);
+        }
+        setContentPanel(panel);
     }
 
     public void showCustomersPanel() {
-        panelManager.showCustomersPanel(contentPanel);
+        JPanel panel = new CustomersPanel(getStatusBar());
         updateStatusBar("Gestión de Clientes");
+        if (themeManager != null) {
+            themeManager.applyThemeToComponent(panel);
+        }
+        setContentPanel(panel);
+    }
+    
+    public void showEmployeesPanel() {
+        JPanel panel = new EmployeesPanel(getStatusBar());
+        updateStatusBar("Gestión de Empleados");
+        if (themeManager != null){
+            themeManager.applyThemeToComponent(panel);
+        }
+        setContentPanel(panel);
     }
 
     public void showReportsPanel() {
-        panelManager.showReportsPanel(contentPanel);
-        updateStatusBar("Informes");
+        JPanel panel = new ReportsPanel(getStatusBar());
+        updateStatusBar("Informes y Estadísticas");
+        if (themeManager != null) {
+            themeManager.applyThemeToComponent(panel);
+        }
+        setContentPanel(panel);
     }
 
     public void showCustomizationPanel() {
-        panelManager.showCustomizationPanel(contentPanel, themeManager);
-        updateStatusBar("Personalización");
+    JPanel panel = new CustomizationPanel(contentPanel, themeManager, this);
+    updateStatusBar("Personalización");
+    if (themeManager != null) {
+        themeManager.applyThemeToComponent(panel);
+    }
+    setContentPanel(panel);
+}
+
+
+    private void setContentPanel(JPanel panel) {
+        contentPanel.removeAll();
+        contentPanel.add(panel, BorderLayout.CENTER);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     public void updateStatusBar(String message) {
-        statusBar.setText(" " + message);
+    statusBar.setText(" " + message);
+    if (themeManager.getCurrentThemeIndex() == 1) { // Tema oscuro
+        statusBar.setForeground(Color.WHITE);
+        statusBar.setBackground(themeManager.getCurrentThemeColor());
+    } else {
+        statusBar.setForeground(Color.BLACK);
+        statusBar.setBackground(null);
     }
+}
+
 
     public void applyTheme(int themeIndex) {
         themeManager.applyTheme(themeIndex, this);
@@ -138,7 +181,6 @@ public class MainFrame extends JFrame {
         return statusBar;
     }
 
-    // Método para conexión a base de datos
     public static Connection getDatabaseConnection() {
         Connection conn = null;
         String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&serverTimezone=UTC";
@@ -155,4 +197,5 @@ public class MainFrame extends JFrame {
         }
         return conn;
     }
+
 }

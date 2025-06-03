@@ -13,11 +13,11 @@ package com.mycompany.tendadeallado;
 import javax.swing.*;
 import java.awt.*;
 
-public class HomePanel {
+public class HomePanel extends JPanel {
     
-    public JPanel createPanel() {
-        JPanel homePanel = new JPanel(new BorderLayout(10, 10));
-        homePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    public HomePanel() {
+        super(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // Título
         JLabel titleLabel = new JLabel("Dashboard - Resumen del Sistema");
@@ -42,12 +42,10 @@ public class HomePanel {
         quickActionsPanel.add(createQuickActionButton("Registrar Cliente"));
         quickActionsPanel.add(createQuickActionButton("Generar Informe"));
         
-        // Añadir componentes al panel principal
-        homePanel.add(titleLabel, BorderLayout.NORTH);
-        homePanel.add(statsPanel, BorderLayout.CENTER);
-        homePanel.add(quickActionsPanel, BorderLayout.SOUTH);
-        
-        return homePanel;
+        // Añadir componentes al panel principal (this)
+        add(titleLabel, BorderLayout.NORTH);
+        add(statsPanel, BorderLayout.CENTER);
+        add(quickActionsPanel, BorderLayout.SOUTH);
     }
     
     private JPanel createStatsCard(String title, String value, String change) {

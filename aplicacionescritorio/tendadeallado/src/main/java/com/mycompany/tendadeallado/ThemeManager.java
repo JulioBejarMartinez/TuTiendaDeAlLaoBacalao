@@ -1,16 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.tendadeallado;
 
-/**
- *
- * @author PRACTICAS
- */
-// Archivo: ThemeManager.java
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ThemeManager {
     private Color[] themeColors = {
@@ -20,90 +13,231 @@ public class ThemeManager {
         new Color(250, 235, 215)  // Beige
     };
     
-    private Color currentThemeColor = themeColors[0];
+    private String[] themeNames = {
+        "Claro", "Oscuro", "Azul", "Beige"
+    };
     
-    public void applyTheme(int themeIndex, JFrame parent) {
-        if (themeIndex >= 0 && themeIndex < themeColors.length) {
-            currentThemeColor = themeColors[themeIndex];
-            
-            JOptionPane.showMessageDialog(
-                parent,
-                "Tema aplicado: " + getThemeName(themeIndex),
-                "Cambio de Tema",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+    private int currentThemeIndex = 0;
+    private Color currentThemeColor = themeColors[0];
+    private List<Component> registeredComponents = new ArrayList<>();
+    
+    public ThemeManager() {
+        // Constructor por defecto
     }
     
-    private String getThemeName(int index) {
-        String[] names = {"Claro", "Oscuro", "Azul", "Beige"};
-        return index < names.length ? names[index] : "Desconocido";
+    // Getters
+    public Color[] getThemeColors() {
+        return themeColors.clone();
+    }
+    
+    public String[] getThemeNames() {
+        return themeNames.clone();
     }
     
     public Color getCurrentThemeColor() {
         return currentThemeColor;
     }
     
-    public Color[] getThemeColors() {
-        return themeColors.clone();
+    public int getCurrentThemeIndex() {
+        return currentThemeIndex;
     }
     
-    public JPanel createThemePreviewPanel(String themeName, Color themeColor, boolean isSelected) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            isSelected ? BorderFactory.createLineBorder(Color.BLUE, 2) : BorderFactory.createLineBorder(Color.GRAY),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+    public String getCurrentThemeName() {
+        return themeNames[currentThemeIndex];
+    }
+    
+    // Aplicar tema por índice
+    public void applyTheme(int themeIndex, JFrame parentFrame) {
+        if (themeIndex >= 0 && themeIndex < themeColors.length) {
+            currentThemeIndex = themeIndex;
+            currentThemeColor = themeColors[themeIndex];
+            
+            // Aplicar tema al frame principal
+            if (parentFrame != null) {
+                applyThemeToComponent(parentFrame);
+                parentFrame.repaint();
+            }
+            
+            // Aplicar tema a todos los componentes registrados
+            applyThemeToRegisteredComponents();
+        }
+    }
+    public void setCurrentThemeColor(Color color) {
+    this.currentThemeColor = color;
+}
+
+
+    // Aplicar tema por color
+    public void applyTheme(Color themeColor, JFrame parentFrame) {
+        for (int i = 0; i < themeColors.length; i++) {
+            if (themeColors[i].equals(themeColor)) {
+                applyTheme(i, parentFrame);
+                break;
+            }
+        }
+    }
+    
+    // Aplicar tema a un componente específico
+    public void applyThemeToComponent(Component component) {
+        if (component == null) return;
         
-        JLabel nameLabel = new JLabel(themeName);
-        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        Color backgroundColor = currentThemeColor;
+        Color foregroundColor = getForegroundColor();
         
-        // Panel de vista previa del tema
-        JPanel previewPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                
-                // Fondo
-                g.setColor(themeColor);
-                g.fillRect(0, 0, getWidth(), getHeight());
-                
-                // Dibujar simulación de elementos de interfaz
-                Color textColor = themeColor.equals(themeColors[1]) ? Color.WHITE : Color.BLACK;
-                
-                // Barra superior
-                g.setColor(themeColor.darker());
-                g.fillRect(0, 0, getWidth(), 20);
-                
-                // Panel izquierdo
-                g.fillRect(0, 20, 40, getHeight() - 20);
-                
-                // Botones en panel izquierdo
-                g.setColor(themeColor.brighter());
-                for (int i = 0; i < 5; i++) {
-                    g.fillRect(5, 30 + i * 25, 30, 20);
-                }
-                
-                // Contenido principal
-                g.setColor(textColor);
-                for (int i = 0; i < 4; i++) {
-                    g.drawLine(50, 40 + i * 20, getWidth() - 10, 40 + i * 20);
+        // Aplicar colores al componente
+        component.setBackground(backgroundColor);
+        component.setForeground(foregroundColor);
+        
+        // Si es un contenedor, aplicar recursivamente a sus hijos
+        if (component instanceof Container) {
+            Container container = (Container) component;
+            applyThemeToContainer(container, backgroundColor, foregroundColor);
+        }
+    }
+    
+    // Aplicar tema a un contenedor y sus componentes hijos
+    private void applyThemeToContainer(Container container, Color backgroundColor, Color foregroundColor) {
+        container.setBackground(backgroundColor);
+        container.setForeground(foregroundColor);
+        
+        for (Component child : container.getComponents()) {
+            if (child instanceof JButton) {
+                applyThemeToButton((JButton) child, backgroundColor, foregroundColor);
+            } else if (child instanceof JLabel) {
+                applyThemeToLabel((JLabel) child, foregroundColor);
+            } else if (child instanceof JTextField) {
+                applyThemeToTextField((JTextField) child, backgroundColor, foregroundColor);
+            } else if (child instanceof JTextArea) {
+                applyThemeToTextArea((JTextArea) child, backgroundColor, foregroundColor);
+            } else if (child instanceof JTable) {
+                applyThemeToTable((JTable) child, backgroundColor, foregroundColor);
+            } else if (child instanceof JTabbedPane) {
+                applyThemeToTabbedPane((JTabbedPane) child, backgroundColor, foregroundColor);
+            } else if (child instanceof JPanel) {
+                applyThemeToPanel((JPanel) child, backgroundColor, foregroundColor);
+            } else {
+                child.setBackground(backgroundColor);
+                child.setForeground(foregroundColor);
+            }
+            
+            // Aplicar recursivamente si es un contenedor
+            if (child instanceof Container) {
+                applyThemeToContainer((Container) child, backgroundColor, foregroundColor);
+            }
+        }
+    }
+    
+    // Métodos específicos para diferentes tipos de componentes
+    private void applyThemeToButton(JButton button, Color backgroundColor, Color foregroundColor) {
+        button.setBackground(backgroundColor.brighter());
+        button.setForeground(foregroundColor);
+    }
+    
+    private void applyThemeToLabel(JLabel label, Color foregroundColor) {
+        label.setForeground(foregroundColor);
+    }
+    
+    private void applyThemeToTextField(JTextField textField, Color backgroundColor, Color foregroundColor) {
+        textField.setBackground(backgroundColor.brighter());
+        textField.setForeground(foregroundColor);
+        textField.setCaretColor(foregroundColor);
+    }
+    
+    private void applyThemeToTextArea(JTextArea textArea, Color backgroundColor, Color foregroundColor) {
+        textArea.setBackground(backgroundColor.brighter());
+        textArea.setForeground(foregroundColor);
+        textArea.setCaretColor(foregroundColor);
+    }
+    
+    private void applyThemeToTable(JTable table, Color backgroundColor, Color foregroundColor) {
+        table.setBackground(backgroundColor.brighter());
+        table.setForeground(foregroundColor);
+        table.setGridColor(foregroundColor.brighter());
+        
+        // Aplicar tema al header de la tabla
+        if (table.getTableHeader() != null) {
+            table.getTableHeader().setBackground(backgroundColor.darker());
+            table.getTableHeader().setForeground(foregroundColor);
+        }
+    }
+    
+    private void applyThemeToTabbedPane(JTabbedPane tabbedPane, Color backgroundColor, Color foregroundColor) {
+        tabbedPane.setBackground(backgroundColor);
+        tabbedPane.setForeground(foregroundColor);
+    }
+    
+    private void applyThemeToPanel(JPanel panel, Color backgroundColor, Color foregroundColor) {
+        panel.setBackground(backgroundColor);
+        panel.setForeground(foregroundColor);
+    }
+    
+    // Registrar componente para aplicación automática de temas
+    public void registerComponent(Component component) {
+        if (component != null && !registeredComponents.contains(component)) {
+            registeredComponents.add(component);
+            applyThemeToComponent(component);
+        }
+    }
+    
+    // Desregistrar componente
+    public void unregisterComponent(Component component) {
+        registeredComponents.remove(component);
+    }
+    
+    // Aplicar tema a todos los componentes registrados
+    private void applyThemeToRegisteredComponents() {
+        for (Component component : registeredComponents) {
+            if (component != null) {
+                applyThemeToComponent(component);
+            }
+        }
+    }
+    
+    // Obtener color de primer plano apropiado según el tema
+    public Color getForegroundColor() {
+        // Para el tema oscuro, usar texto blanco
+        if (currentThemeIndex == 1) { // Tema oscuro
+            return Color.WHITE;
+        }
+        // Para otros temas, usar texto negro
+        return Color.BLACK;
+    }
+    
+    // Método para obtener color de acento
+    public Color getAccentColor() {
+        switch (currentThemeIndex) {
+            case 0: return new Color(0, 120, 215);    // Azul para tema claro
+            case 1: return new Color(100, 200, 255);  // Azul claro para tema oscuro
+            case 2: return new Color(0, 78, 156);     // Azul oscuro para tema azul
+            case 3: return new Color(139, 69, 19);    // Marrón para tema beige
+            default: return new Color(0, 120, 215);
+        }
+    }
+    // Agregar método para obtener el índice del tema por color
+    public int getThemeIndexByColor(Color color) {
+        for (int i = 0; i < themeColors.length; i++) {
+            if (themeColors[i].equals(color)) {
+                return i;
                 }
             }
-        };
-        
-        previewPanel.setPreferredSize(new Dimension(150, 100));
-        
-        // Panel inferior con botón de selección
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JRadioButton selectButton = new JRadioButton("Seleccionar");
-        selectButton.setSelected(isSelected);
-        bottomPanel.add(selectButton);
-        
-        panel.add(nameLabel, BorderLayout.NORTH);
-        panel.add(previewPanel, BorderLayout.CENTER);
-        panel.add(bottomPanel, BorderLayout.SOUTH);
-        
-        return panel;
+            return 0; // Retorna tema por defecto si no encuentra coincidencia
+        }
+    // Agregar método para sincronizar el índice del tema actual
+    public void syncThemeIndex() {
+        for (int i = 0; i < themeColors.length; i++) {
+            if (themeColors[i].equals(currentThemeColor)) {
+                currentThemeIndex = i;
+                break;
+            }
+        }
+    }
+    // Restablecer tema por defecto
+    public void resetToDefault(JFrame parentFrame) {
+        applyTheme(0, parentFrame);
+    }
+    
+    // Método para limpiar componentes registrados (útil para liberación de memoria)
+    public void clearRegisteredComponents() {
+        registeredComponents.clear();
     }
 }

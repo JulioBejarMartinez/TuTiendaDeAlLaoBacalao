@@ -40,6 +40,10 @@ public class ToolBarActionListener implements ActionListener {
                 parent.showCustomersPanel();
                 break;
                 
+            case "employees":
+                parent.showEmployeesPanel();
+                break;
+                
             case "reports":
                 parent.showReportsPanel();
                 break;

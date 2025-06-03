@@ -33,6 +33,7 @@ public class ToolBarManager {
         toolBar.add(createToolButton("Inventario", "inventory", "Gestión de inventario"));
         toolBar.add(createToolButton("Ventas", "sales", "Gestión de ventas"));
         toolBar.add(createToolButton("Clientes", "customers", "Gestión de clientes"));
+        toolBar.add(createToolButton("Empleados", "employees", "Gestión de empleados"));
         toolBar.add(createToolButton("Informes", "reports", "Informes y estadísticas"));
         
         toolBar.addSeparator();

@@ -13,53 +13,113 @@ public class CustomizationPanel extends JPanel {
     };
     
     private Color currentThemeColor = themeColors[0];
+    private boolean isDarkTheme = false;
     private JPanel parentPanel;
+    private ThemeManager themeManager;
+    private JFrame parentFrame;
+    private JTabbedPane mainTabbedPane;
+    private JPanel themesPanel;
+    private ButtonGroup themeButtonGroup;
+    private JRadioButton[] themeRadioButtons;
     
     // Constructor principal
-    public CustomizationPanel(JPanel parentPanel) {
-        this.parentPanel = parentPanel;
-        initializePanel();
-    }
+    public CustomizationPanel(JPanel parentPanel, ThemeManager themeManager, JFrame parentFrame) {
+    this.parentPanel = parentPanel;
+    this.themeManager = themeManager;
+    this.parentFrame = parentFrame;
+    this.currentThemeColor = themeManager.getCurrentThemeColor();
+    initializePanel();
+}
 
-    // Constructor sin parámetros, opcional, inicializa sin parentPanel
-    public CustomizationPanel() {
-        this.parentPanel = null;
-        initializePanel();
-    }
-    
+
     private void initializePanel() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel titleLabel = new JLabel("Personalización de Interfaz");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Temas", createThemesPanel());
-        tabbedPane.addTab("Módulos", createModulesPanel());
-        tabbedPane.addTab("Apariencia", createAppearancePanel());
-        
-        add(titleLabel, BorderLayout.NORTH);
-        add(tabbedPane, BorderLayout.CENTER);
-        add(createButtonPanel(), BorderLayout.SOUTH);
-    }
+    setLayout(new BorderLayout(10, 10));
+    setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    
+    JLabel titleLabel = new JLabel("Personalización de Interfaz");
+    titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+    
+    mainTabbedPane = new JTabbedPane();
+    themesPanel = createThemesPanel();
+    mainTabbedPane.addTab("Temas", themesPanel);
+    mainTabbedPane.addTab("Módulos", createModulesPanel());
+    mainTabbedPane.addTab("Apariencia", createAppearancePanel());
+    
+    add(titleLabel, BorderLayout.NORTH);
+    add(mainTabbedPane, BorderLayout.CENTER);
+    add(createButtonPanel(), BorderLayout.SOUTH);
+}
     
     // --- El resto de métodos se mantienen igual ---
-    private JPanel createThemesPanel() {
-        JPanel themesPanel = new JPanel(new BorderLayout(10, 10));
-        JPanel themesGrid = new JPanel(new GridLayout(2, 2, 10, 10));
-        themesGrid.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        themesGrid.add(createThemePreviewPanel("Tema Claro", themeColors[0], currentThemeColor.equals(themeColors[0])));
-        themesGrid.add(createThemePreviewPanel("Tema Oscuro", themeColors[1], currentThemeColor.equals(themeColors[1])));
-        themesGrid.add(createThemePreviewPanel("Tema Azul", themeColors[2], currentThemeColor.equals(themeColors[2])));
-        themesGrid.add(createThemePreviewPanel("Tema Beige", themeColors[3], currentThemeColor.equals(themeColors[3])));
-        
-        themesPanel.add(new JLabel("Seleccione un tema:"), BorderLayout.NORTH);
-        themesPanel.add(themesGrid, BorderLayout.CENTER);
-        
-        return themesPanel;
+   private JPanel createThemesPanel() {
+    JPanel themesMainPanel = new JPanel(new BorderLayout(10, 10));
+    JPanel themesGrid = new JPanel(new GridLayout(2, 2, 10, 10));
+    themesGrid.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    Color[] colors = themeManager != null ? themeManager.getThemeColors() : themeColors;
+    String[] names = {"Claro", "Oscuro", "Azul", "Beige"};
+
+    // Inicializar el grupo de botones y array de radio buttons
+    themeButtonGroup = new ButtonGroup();
+    themeRadioButtons = new JRadioButton[colors.length];
+
+    for (int i = 0; i < colors.length; i++) {
+        int index = i;
+
+        // Crear radio button para cada tema
+        JRadioButton selectButton = new JRadioButton("Seleccionar");
+        selectButton.setSelected(currentThemeColor.equals(colors[i]));
+        themeRadioButtons[i] = selectButton;
+        themeButtonGroup.add(selectButton);
+
+        // Agregar listener para actualizar el tema seleccionado
+        selectButton.addActionListener(e -> {
+            if (selectButton.isSelected()) {
+                currentThemeColor = colors[index];
+                updateThemeSelection();
+            }
+        });
+
+        themesGrid.add(createThemePreviewPanel(names[i], colors[i], selectButton, () -> {
+            currentThemeColor = colors[index];
+            updateThemeSelection();
+        }));
     }
+
+    themesMainPanel.add(new JLabel("Seleccione un tema:"), BorderLayout.NORTH);
+    themesMainPanel.add(themesGrid, BorderLayout.CENTER);
+    return themesMainPanel;
+}
+private void updateThemeSelection() {
+    if (themeManager != null && themeRadioButtons != null) {
+        Color[] colors = themeManager.getThemeColors();
+        
+        // Actualizar qué radio button está seleccionado
+        for (int i = 0; i < themeRadioButtons.length && i < colors.length; i++) {
+            themeRadioButtons[i].setSelected(currentThemeColor.equals(colors[i]));
+        }
+        
+        // Redibujar el panel de temas
+        if (themesPanel != null) {
+            themesPanel.revalidate();
+            themesPanel.repaint();
+        }
+    }
+}
+// Modifica el método refreshThemeDisplay()
+public void refreshThemeDisplay() {
+    if (themeManager != null) {
+        currentThemeColor = themeManager.getCurrentThemeColor();
+        
+        // Obtener el color de texto correcto del ThemeManager
+        Color textColor = themeManager.getForegroundColor();
+        isDarkTheme = (themeManager.getCurrentThemeIndex() == 1);
+        
+        updateComponentColors(this, currentThemeColor, textColor);
+        updateThemeSelection();
+    }
+}
+
     
     private JPanel createModulesPanel() {
         JPanel modulesPanel = new JPanel(new BorderLayout(10, 10));
@@ -179,59 +239,55 @@ public class CustomizationPanel extends JPanel {
         return buttonPanel;
     }
     
-    private JPanel createThemePreviewPanel(String themeName, Color themeColor, boolean isSelected) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            isSelected ? BorderFactory.createLineBorder(Color.BLUE, 2) : BorderFactory.createLineBorder(Color.GRAY),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        
-        JLabel nameLabel = new JLabel(themeName);
-        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        
-        JPanel previewPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                g.setColor(themeColor);
-                g.fillRect(0, 0, getWidth(), getHeight());
-                
-                Color textColor = themeColor.equals(themeColors[1]) ? Color.WHITE : Color.BLACK;
-                g.setColor(textColor);
-                
-                g.setColor(themeColor.darker());
-                g.fillRect(0, 0, getWidth(), 20);
-                
-                g.fillRect(0, 20, 40, getHeight() - 20);
-                
-                g.setColor(themeColor.brighter());
-                for (int i = 0; i < 5; i++) {
-                    g.fillRect(5, 30 + i * 25, 30, 20);
-                }
-                
-                g.setColor(textColor);
-                for (int i = 0; i < 4; i++) {
-                    g.drawLine(50, 40 + i * 20, getWidth() - 10, 40 + i * 20);
-                }
+    private JPanel createThemePreviewPanel(String themeName, Color themeColor, JRadioButton selectButton, Runnable onSelect) {
+    JPanel panel = new JPanel(new BorderLayout());
+    panel.setBorder(BorderFactory.createCompoundBorder(
+        selectButton.isSelected() ? BorderFactory.createLineBorder(Color.BLUE, 2) : BorderFactory.createLineBorder(Color.GRAY),
+        BorderFactory.createEmptyBorder(10, 10, 10, 10)
+    ));
+
+    JLabel nameLabel = new JLabel(themeName);
+    nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+    JPanel previewPanel = new JPanel() {
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            g.setColor(themeColor);
+            g.fillRect(0, 0, getWidth(), getHeight());
+
+            Color textColor = themeColor.equals(new Color(50, 50, 50)) ? Color.WHITE : Color.BLACK;
+            g.setColor(themeColor.darker());
+            g.fillRect(0, 0, getWidth(), 20);
+            g.fillRect(0, 20, 40, getHeight() - 20);
+            g.setColor(themeColor.brighter());
+            for (int i = 0; i < 5; i++) {
+                g.fillRect(5, 30 + i * 25, 30, 20);
             }
-        };
-        
-        previewPanel.setPreferredSize(new Dimension(150, 100));
-        
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JRadioButton selectButton = new JRadioButton("Seleccionar");
-        selectButton.setSelected(isSelected);
-        
-        selectButton.addActionListener(e -> selectTheme(themeName, themeColor));
-        
-        bottomPanel.add(selectButton);
-        
-        panel.add(nameLabel, BorderLayout.NORTH);
-        panel.add(previewPanel, BorderLayout.CENTER);
-        panel.add(bottomPanel, BorderLayout.SOUTH);
-        
-        return panel;
-    }
+            g.setColor(textColor);
+            for (int i = 0; i < 4; i++) {
+                g.drawLine(50, 40 + i * 20, getWidth() - 10, 40 + i * 20);
+            }
+        }
+    };
+    previewPanel.setPreferredSize(new Dimension(150, 100));
+
+    JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+
+    selectButton.addActionListener(e -> {
+        onSelect.run();
+    });
+
+    bottomPanel.add(selectButton);
+
+    panel.add(nameLabel, BorderLayout.NORTH);
+    panel.add(previewPanel, BorderLayout.CENTER);
+    panel.add(bottomPanel, BorderLayout.SOUTH);
+
+    return panel;
+}
+
+
     
     private void moveListItem(JList<String> list, DefaultListModel<String> model, int direction) {
         int selectedIndex = list.getSelectedIndex();
@@ -256,25 +312,87 @@ public class CustomizationPanel extends JPanel {
         );
     }
     
-    private void restoreDefaults() {
-        int option = JOptionPane.showConfirmDialog(
+    // Modifica el método restoreDefaults()
+private void restoreDefaults() {
+    int option = JOptionPane.showConfirmDialog(
+        this,
+        "¿Está seguro que desea restaurar los valores predeterminados?",
+        "Confirmar Restauración",
+        JOptionPane.YES_NO_OPTION
+    );
+
+    if (option == JOptionPane.YES_OPTION) {
+        if (themeManager != null) {
+            // Usar el método resetToDefault del ThemeManager
+            themeManager.resetToDefault(parentFrame);
+            
+            // Actualizar el color actual
+            currentThemeColor = themeManager.getCurrentThemeColor();
+            
+            // Obtener el color de texto correcto
+            Color textColor = themeManager.getForegroundColor();
+            
+            // Aplicar al panel de personalización
+            updateComponentColors(this, currentThemeColor, textColor);
+            updateThemeSelection();
+        }
+
+        JOptionPane.showMessageDialog(
             this,
-            "¿Está seguro que desea restaurar los valores predeterminados?",
-            "Confirmar Restauración",
-            JOptionPane.YES_NO_OPTION
+            "Valores predeterminados restaurados",
+            "Restauración Completada",
+            JOptionPane.INFORMATION_MESSAGE
         );
+    }
+}
+
+
+    private void updateComponentColors(Component component, Color bgColor, Color fgColor) {
+    component.setBackground(bgColor);
+    component.setForeground(fgColor);
+
+    if (component instanceof JTabbedPane tabbedPane) {
+        tabbedPane.setBackground(bgColor);
+        tabbedPane.setForeground(fgColor);
         
-        if (option == JOptionPane.YES_OPTION) {
-            currentThemeColor = themeColors[0];
-            JOptionPane.showMessageDialog(
-                this,
-                "Valores predeterminados restaurados",
-                "Restauración Completada",
-                JOptionPane.INFORMATION_MESSAGE
-            );
+        // Actualizar colores de las pestañas
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            tabbedPane.setBackgroundAt(i, bgColor);
+            tabbedPane.setForegroundAt(i, fgColor);
         }
     }
     
+    // Manejar componentes específicos
+    if (component instanceof JButton button) {
+        button.setBackground(bgColor.brighter());
+        button.setForeground(fgColor);
+    } else if (component instanceof JTextField textField) {
+        textField.setBackground(bgColor.brighter());
+        textField.setForeground(fgColor);
+        textField.setCaretColor(fgColor);
+    } else if (component instanceof JTextArea textArea) {
+        textArea.setBackground(bgColor.brighter());
+        textArea.setForeground(fgColor);
+        textArea.setCaretColor(fgColor);
+    } else if (component instanceof JRadioButton radioButton) {
+        radioButton.setBackground(bgColor);
+        radioButton.setForeground(fgColor);
+    } else if (component instanceof JCheckBox checkBox) {
+        checkBox.setBackground(bgColor);
+        checkBox.setForeground(fgColor);
+    } else if (component instanceof JComboBox<?> comboBox) {
+        comboBox.setBackground(bgColor.brighter());
+        comboBox.setForeground(fgColor);
+    }
+
+    if (component instanceof Container container) {
+        for (Component child : container.getComponents()) {
+            updateComponentColors(child, bgColor, fgColor);
+        }
+    }
+}
+
+
     private void cancelChanges() {
         JOptionPane.showMessageDialog(
             this,
@@ -284,26 +402,76 @@ public class CustomizationPanel extends JPanel {
         );
     }
     
+    // Modifica el método applyChanges() en CustomizationPanel
     private void applyChanges() {
-        JOptionPane.showMessageDialog(
-            this,
-            "Cambios aplicados",
-            "Aplicar",
-            JOptionPane.INFORMATION_MESSAGE
-        );
+    if (themeManager != null && currentThemeColor != null) {
+        // Sincronizar el índice del tema en ThemeManager
+        int themeIndex = getThemeIndexForColor(currentThemeColor);
+        
+        // Aplicar el tema usando el método del ThemeManager que maneja todo correctamente
+        themeManager.applyTheme(themeIndex, parentFrame);
+        
+        // Actualizar el color actual
+        currentThemeColor = themeManager.getCurrentThemeColor();
+        
+        // Obtener el color de texto correcto del ThemeManager
+        Color textColor = themeManager.getForegroundColor();
+        isDarkTheme = (themeIndex == 1);
+        
+        // Aplicar colores al panel de personalización
+        updateComponentColors(this, currentThemeColor, textColor);
+        updateThemeSelection();
+        
+        revalidate();
+        repaint();
     }
-    
-    private void saveChanges() {
-        JOptionPane.showMessageDialog(
-            this,
-            "Cambios guardados",
-            "Guardar",
-            JOptionPane.INFORMATION_MESSAGE
-        );
+
+    JOptionPane.showMessageDialog(
+        this,
+        "Cambios aplicados",
+        "Aplicar",
+        JOptionPane.INFORMATION_MESSAGE
+    );
+}
+
+   // Modifica el método saveChanges()
+// Modifica el método saveChanges()
+private void saveChanges() {
+    if (themeManager != null && currentThemeColor != null) {
+        // Sincronizar el índice del tema en ThemeManager
+        int themeIndex = getThemeIndexForColor(currentThemeColor);
+        
+        // Aplicar el tema usando el método del ThemeManager
+        themeManager.applyTheme(themeIndex, parentFrame);
+        
+        // Actualizar el color actual
+        currentThemeColor = themeManager.getCurrentThemeColor();
+        
+        // Obtener el color de texto correcto del ThemeManager
+        Color textColor = themeManager.getForegroundColor();
+        
+        // Aplicar colores al panel de personalización
+        updateComponentColors(this, currentThemeColor, textColor);
+        updateThemeSelection();
+        
+        // Aquí podrías guardar la configuración en archivo o base de datos si se requiere
     }
-    
-  
-    public JPanel createPanel(ThemeManager themeManager) {
-        return this;
+
+    JOptionPane.showMessageDialog(
+        this,
+        "Cambios guardados",
+        "Guardar",
+        JOptionPane.INFORMATION_MESSAGE
+    );
+}
+// Agrega este método helper en CustomizationPanel
+private int getThemeIndexForColor(Color color) {
+    Color[] colors = themeManager != null ? themeManager.getThemeColors() : themeColors;
+    for (int i = 0; i < colors.length; i++) {
+        if (colors[i].equals(color)) {
+            return i;
+        }
     }
+    return 0; // Tema por defecto
+}
 }
