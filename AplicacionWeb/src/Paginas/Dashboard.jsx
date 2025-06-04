@@ -98,7 +98,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-wrapper min-vh-100 d-flex flex-column bg-light">
+    <div className="dashboard-wrapper min-vh-100 d-flex flex-column full-background">
       {/* Logo y Header */}
       <div className="container-fluid py-4 bg-white text-center border-bottom">
         <img 

@@ -73,7 +73,7 @@ const DetalleProducto = () => {
   }
 
   return (
-    <div className="d-flex flex-column min-vh-100 bg-light">
+    <div className="d-flex flex-column min-vh-100 full-background">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="container py-3 text-center">

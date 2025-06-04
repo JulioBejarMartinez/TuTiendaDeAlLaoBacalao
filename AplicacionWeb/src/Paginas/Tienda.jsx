@@ -128,7 +128,7 @@ const Tienda = () => {
   }
 
   return (
-    <div className="tienda-wrapper min-vh-100 d-flex flex-column bg-light">
+    <div className="tienda-wrapper min-vh-100 d-flex flex-column full-background">
       {/* Logo y Header */}
       <div className="container-fluid py-4 bg-white text-center border-bottom">
         <img 
@@ -140,58 +140,71 @@ const Tienda = () => {
       </div>
 
       {/* Navbar */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
-        <div className="container">
-          <a className="navbar-brand fw-bold" href="#!">
-            <i className="bi bi-shop me-2"></i>
-            Tu Tienda de Al Lao
-          </a>
-          <div className="ms-auto d-flex align-items-center">
-            {/* Botón de la cesta */}
-            <button 
-              className="btn btn-outline-light rounded-pill me-2 position-relative" 
-              onClick={toggleCesta}
-            >
-              <i className="bi bi-cart-fill"></i>
-              {calcularCantidadItems() > 0 && (
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                  {calcularCantidadItems()}
-                </span>
-              )}
-            </button>
+        <nav className="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
+          <div className="container">
+            <a className="navbar-brand fw-bold" href="#!">
+              <i className="bi bi-shop me-2"></i>
+              Tu Tienda de Al Lao
+            </a>
             
-            {/* Menú de usuario */}
-            <div className="dropdown">
-              <button 
-                className="btn btn-outline-light rounded-pill d-flex align-items-center px-3" 
-                onClick={toggleProfileMenu}
+            {/* Botones de la izquierda */}
+            <div className="d-flex align-items-center ms-3">
+              {/* Botón para ir a la tienda */}
+              <button
+                className="btn btn-outline-light rounded-pill me-2"
+                onClick={() => navigate('/tienda')}
               >
-                <div className="avatar me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
-                  U
-                </div>
-                <span className="d-none d-md-inline">Usuario</span>
-                <i className="bi bi-chevron-down ms-2"></i>
+                <i className="bi bi-bag me-1"></i> Tienda
               </button>
-              {showProfileMenu && (
-                <div className="dropdown-menu show dropdown-menu-end shadow">
-                  <a className="dropdown-item" href="#!" onClick={() => navigate('/dashboard')}>
-                    <i className="bi bi-speedometer2 me-2"></i>
-                    Ir al Dashboard
-                  </a>
-                  <div className="dropdown-divider"></div>
-                  <button 
-                    className="dropdown-item text-danger" 
-                    onClick={() => navigate('/login')}
-                  >
-                    <i className="bi bi-box-arrow-right me-2"></i>
-                    Cerrar sesión
-                  </button>
-                </div>
-              )}
+            </div>
+
+            {/* Botones de la derecha */}
+            <div className="ms-auto d-flex align-items-center">
+              {/* Botón de la cesta */}
+              <button 
+                className="btn btn-outline-light rounded-pill me-2 position-relative" 
+                onClick={toggleCesta}
+              >
+                <i className="bi bi-cart-fill"></i>
+                {calcularCantidadItems() > 0 && (
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {calcularCantidadItems()}
+                  </span>
+                )}
+              </button>
+              
+              {/* Menú de usuario */}
+              <div className="dropdown">
+                <button 
+                  className="btn btn-outline-light rounded-pill d-flex align-items-center px-3" 
+                  onClick={toggleProfileMenu}
+                >
+                  <div className="avatar me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                    U
+                  </div>
+                  <span className="d-none d-md-inline">Usuario</span>
+                  <i className="bi bi-chevron-down ms-2"></i>
+                </button>
+                {showProfileMenu && (
+                  <div className="dropdown-menu show dropdown-menu-end shadow">
+                    <a className="dropdown-item" href="#!" onClick={() => navigate('/dashboard')}>
+                      <i className="bi bi-speedometer2 me-2"></i>
+                      Ir al Dashboard
+                    </a>
+                    <div className="dropdown-divider"></div>
+                    <button 
+                      className="dropdown-item text-danger" 
+                      onClick={() => navigate('/login')}
+                    >
+                      <i className="bi bi-box-arrow-right me-2"></i>
+                      Cerrar sesión
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
       {/* Modal de la cesta */}
       <ModalCesta getImageUrl={getImageUrl} />

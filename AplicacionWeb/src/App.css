@@ -1,8 +1,17 @@
 #root {
+  height: 100%;
   max-width: 12800px;
-  margin: 0 auto;
-  padding: 2rem;
+  margin: 0;
+  padding: 0;
   text-align: center;
+}
+
+.full-background {
+  min-height: 100vh;
+  background-image: url('/supermercadobackground.jpg'); /* Cambia el nombre por el de tu imagen */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .logo {
