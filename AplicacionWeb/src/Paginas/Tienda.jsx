@@ -130,7 +130,12 @@ const Tienda = () => {
   return (
     <div className="tienda-wrapper min-vh-100 d-flex flex-column full-background">
       {/* Logo y Header */}
-      <div className="container-fluid py-4 bg-white text-center border-bottom">
+      <div className="container-fluid py-4 text-center border-bottom"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.3)', // Blanco translúcido
+          backdropFilter: 'blur(6px)', // Difumina el fondo detrás
+          WebkitBackdropFilter: 'blur(6px)' // Para compatibilidad Safari
+        }}>
         <img 
           src="/TuTiendaDeAlLaoLogo.png" 
           alt="TuTiendaDeAlLao" 

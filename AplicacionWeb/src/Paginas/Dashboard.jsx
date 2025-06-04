@@ -100,7 +100,14 @@ const Dashboard = () => {
   return (
     <div className="dashboard-wrapper min-vh-100 d-flex flex-column full-background">
       {/* Logo y Header */}
-      <div className="container-fluid py-4 bg-white text-center border-bottom">
+      <div
+        className="container-fluid py-4 text-center border-bottom"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.3)', // Blanco translúcido
+          backdropFilter: 'blur(6px)', // Difumina el fondo detrás
+          WebkitBackdropFilter: 'blur(6px)' // Para compatibilidad Safari
+        }}
+      >
         <img 
           src="/TuTiendaDeAlLaoLogo.png" 
           alt="TuTiendaDeAlLao" 
@@ -109,45 +116,60 @@ const Dashboard = () => {
         />
       </div>
       {/* Navbar */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
-        <div className="container">
-          <a className="navbar-brand fw-bold" href="#!">
-            <i className="bi bi-speedometer2 me-2"></i>
-            Mi Portal
-          </a>
-          
-          <div className="ms-auto d-flex align-items-center">
-            <div className="dropdown">
-              <button 
-                className="btn btn-outline-light rounded-pill d-flex align-items-center px-3" 
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
+        <nav className="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
+          <div className="container">
+            <a className="navbar-brand fw-bold" href="#!">
+              <i className="bi bi-speedometer2 me-2"></i>
+              Mi Portal
+            </a>
+            {/* Botones a la izquierda */}
+            <div className="d-flex align-items-center ms-3">
+              <button
+                className="btn btn-outline-light rounded-pill me-2"
+                onClick={() => navigate('/tienda')}
               >
-                <div className="avatar me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
-                  {cliente.Nombre.charAt(0).toUpperCase()}
-                </div>
-                <span className="d-none d-md-inline">{cliente.Nombre}</span>
-                <i className="bi bi-chevron-down ms-2"></i>
+                <i className="bi bi-bag me-1"></i> Tienda
               </button>
-              {showProfileMenu && (
-                <div className="dropdown-menu show dropdown-menu-end shadow">
-                  <div className="dropdown-header">
-                    <h6>{cliente.Nombre}</h6>
-                    <small className="text-muted">{cliente.Email}</small>
+              <button
+                className="btn btn-outline-light rounded-pill me-2"
+                onClick={() => navigate('/informacion')}
+              >
+                <i className="bi bi-info-circle me-1"></i> Información
+              </button>
+            </div>
+            {/* Menú de usuario a la derecha */}
+            <div className="ms-auto d-flex align-items-center">
+              <div className="dropdown">
+                <button 
+                  className="btn btn-outline-light rounded-pill d-flex align-items-center px-3" 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                >
+                  <div className="avatar me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                    {cliente.Nombre.charAt(0).toUpperCase()}
                   </div>
-                  <div className="dropdown-divider"></div>
-                  <button 
-                    className="dropdown-item text-danger" 
-                    onClick={handleLogout}
-                  >
-                    <i className="bi bi-box-arrow-right me-2"></i>
-                    Cerrar sesión
-                  </button>
-                </div>
-              )}
+                  <span className="d-none d-md-inline">{cliente.Nombre}</span>
+                  <i className="bi bi-chevron-down ms-2"></i>
+                </button>
+                {showProfileMenu && (
+                  <div className="dropdown-menu show dropdown-menu-end shadow">
+                    <div className="dropdown-header">
+                      <h6>{cliente.Nombre}</h6>
+                      <small className="text-muted">{cliente.Email}</small>
+                    </div>
+                    <div className="dropdown-divider"></div>
+                    <button 
+                      className="dropdown-item text-danger" 
+                      onClick={handleLogout}
+                    >
+                      <i className="bi bi-box-arrow-right me-2"></i>
+                      Cerrar sesión
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
       {/* Main Content */}
       <div className="container my-4 flex-grow-1">

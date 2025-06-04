@@ -11,6 +11,8 @@ const DetalleProducto = () => {
   const [error, setError] = useState(null);
   const [imagenError, setImagenError] = useState(false);
   const navigate = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const toggleProfileMenu = () => setShowProfileMenu(!showProfileMenu);
   const API_URL = 'http://localhost:3000';
 
   const { añadirACesta, calcularCantidadItems, toggleCesta } = useCesta(); // Usar el contexto de la cesta
@@ -75,26 +77,46 @@ const DetalleProducto = () => {
   return (
     <div className="d-flex flex-column min-vh-100 full-background">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container py-3 text-center">
-          <img
-            src="/TuTiendaDeAlLaoLogo.png"
-            alt="TuTiendaDeAlLao"
-            className="brand-logo img-fluid"
-            style={{ maxHeight: '100px' }}
-          />
-        </div>
-
-        <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+      <header className="shadow-sm">
+        <div className="container-fluid py-4 text-center border-bottom"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.3)', // Blanco translúcido
+          backdropFilter: 'blur(6px)', // Difumina el fondo detrás
+          WebkitBackdropFilter: 'blur(6px)' // Para compatibilidad Safari
+        }}>
+        <img 
+          src="/TuTiendaDeAlLaoLogo.png" 
+          alt="TuTiendaDeAlLao" 
+          className="img-fluid" 
+          style={{ maxHeight: '120px' }}
+        />
+      </div>
+        {/* Navbar igual que en Tienda */}
+        <nav className="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
           <div className="container">
             <a className="navbar-brand fw-bold" href="#!">
               <i className="bi bi-shop me-2"></i>
               Tu Tienda de Al Lao
             </a>
-
-            <div className="ms-auto">
+            {/* Botones a la izquierda */}
+            <div className="d-flex align-items-center ms-3">
               <button
-                className="btn btn-outline-light rounded-pill position-relative"
+                className="btn btn-outline-light rounded-pill me-2"
+                onClick={() => navigate('/tienda')}
+              >
+                <i className="bi bi-bag me-1"></i> Tienda
+              </button>
+              <button
+                className="btn btn-outline-light rounded-pill me-2"
+                onClick={() => navigate('/informacion')}
+              >
+                <i className="bi bi-info-circle me-1"></i> Información
+              </button>
+            </div>
+            {/* Botones a la derecha */}
+            <div className="ms-auto d-flex align-items-center">
+              <button
+                className="btn btn-outline-light rounded-pill me-2 position-relative"
                 onClick={toggleCesta}
               >
                 <i className="bi bi-cart-fill"></i>
@@ -104,6 +126,35 @@ const DetalleProducto = () => {
                   </span>
                 )}
               </button>
+              {/* Menú de usuario */}
+              <div className="dropdown">
+                <button
+                  className="btn btn-outline-light rounded-pill d-flex align-items-center px-3"
+                  onClick={toggleProfileMenu}
+                >
+                  <div className="avatar me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                    U
+                  </div>
+                  <span className="d-none d-md-inline">Usuario</span>
+                  <i className="bi bi-chevron-down ms-2"></i>
+                </button>
+                {showProfileMenu && (
+                  <div className="dropdown-menu show dropdown-menu-end shadow">
+                    <a className="dropdown-item" href="#!" onClick={() => navigate('/dashboard')}>
+                      <i className="bi bi-speedometer2 me-2"></i>
+                      Ir al Dashboard
+                    </a>
+                    <div className="dropdown-divider"></div>
+                    <button
+                      className="dropdown-item text-danger"
+                      onClick={() => navigate('/login')}
+                    >
+                      <i className="bi bi-box-arrow-right me-2"></i>
+                      Cerrar sesión
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </nav>
