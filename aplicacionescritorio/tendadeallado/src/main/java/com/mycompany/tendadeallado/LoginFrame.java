@@ -3,7 +3,10 @@ package com.mycompany.tendadeallado;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class LoginFrame extends JFrame {
@@ -13,41 +16,85 @@ public class LoginFrame extends JFrame {
     private JButton cancelButton;
 
     public LoginFrame() {
-        setTitle("Sistema de Gestión de Tienda - Login");
-        setSize(400, 300);
+        setTitle("Sistema de Gestión - Login");
+        setSize(360, 360);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
         
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Panel principal con fondo blanco
+        JPanel mainPanel = new JPanel();
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setLayout(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título con fuente sobria
+        JLabel titleLabel = new JLabel("Iniciar Sesión");
+        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 22));
+        titleLabel.setForeground(Color.DARK_GRAY);
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(titleLabel, BorderLayout.NORTH);
+
+        // Panel formulario centrado
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 5, 10, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0; gbc.gridy = 0;
         
-        JPanel logoPanel = new JPanel();
-        JLabel logoLabel = new JLabel("SISTEMA DE GESTIÓN");
-        logoLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        logoPanel.add(logoLabel);
-        
-        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
         JLabel userLabel = new JLabel("Usuario:");
+        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userLabel.setForeground(Color.DARK_GRAY);
+        formPanel.add(userLabel, gbc);
+        
+        gbc.gridx = 1;
         userField = new JTextField(15);
+        userField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.GRAY));
+        formPanel.add(userField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1;
+        JLabel passLabel = new JLabel("Contraseña:");
+        passLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        passLabel.setForeground(Color.DARK_GRAY);
+        formPanel.add(passLabel, gbc);
         
-        JLabel passwordLabel = new JLabel("Contraseña:");
+        gbc.gridx = 1;
         passwordField = new JPasswordField(15);
-        
-        loginButton = new JButton("Iniciar Sesión");
-        cancelButton = new JButton("Cancelar");
-        
-        formPanel.add(userLabel);
-        formPanel.add(userField);
-        formPanel.add(passwordLabel);
-        formPanel.add(passwordField);
-        formPanel.add(loginButton);
-        formPanel.add(cancelButton);
-        
-        mainPanel.add(logoPanel, BorderLayout.NORTH);
+        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        passwordField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.GRAY));
+        formPanel.add(passwordField, gbc);
+
         mainPanel.add(formPanel, BorderLayout.CENTER);
+
+        // Panel botones
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+
+        loginButton = new JButton("Entrar");
+        loginButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        loginButton.setForeground(Color.WHITE);
+        loginButton.setBackground(new Color(45, 118, 232));  // Azul Windows clásico
+        loginButton.setFocusPainted(false);
+        loginButton.setBorder(BorderFactory.createEmptyBorder(6, 15, 6, 15));
+
+        cancelButton = new JButton("Cancelar");
+        cancelButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        cancelButton.setForeground(Color.GRAY);
+        cancelButton.setBackground(Color.WHITE);
+        cancelButton.setFocusPainted(false);
+        cancelButton.setBorder(BorderFactory.createEmptyBorder(6, 15, 6, 15));
+
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(loginButton);
+
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
         add(mainPanel);
-        
+
+        // Listeners
         loginButton.addActionListener(e -> verificarLogin());
         cancelButton.addActionListener(e -> {
             userField.setText("");
@@ -56,7 +103,7 @@ public class LoginFrame extends JFrame {
 
         passwordField.addKeyListener(new KeyAdapter() {
             public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER) {
                     verificarLogin();
                 }
             }

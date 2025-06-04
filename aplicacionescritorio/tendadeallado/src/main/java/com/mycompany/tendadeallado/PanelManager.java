@@ -10,7 +10,9 @@ public class PanelManager {
     private SalesPanel salesPanel;
     private CustomersPanel customersPanel;
     private EmployeesPanel employeesPanel;
+    private ProvidersPanel providersPanel;
     private ReportsPanel reportsPanel;
+    private PriceCalculatorPanel priceCalculatorPanel;
     private CustomizationPanel customizationPanel;
     private ThemeManager themeManager;
     
@@ -27,6 +29,8 @@ public class PanelManager {
     salesPanel = new SalesPanel(parent.getStatusBar());
     customersPanel = new CustomersPanel(parent.getStatusBar());
     employeesPanel = new EmployeesPanel(parent.getStatusBar());
+    providersPanel = new ProvidersPanel(parent.getStatusBar());
+    priceCalculatorPanel = new PriceCalculatorPanel(parent.getStatusBar());
     reportsPanel = new ReportsPanel(parent.getStatusBar());
     
     customizationPanel = null;  // se crea dinámicamente
@@ -49,8 +53,15 @@ public void showCustomersPanel(JPanel contentPanel) {
     switchPanel(contentPanel, customersPanel);
 }
 
-public void showEmployeesPanel (JPanel contentPanel){
+public void showEmployeesPanel (JPanel contentPanel) {
     switchPanel(contentPanel, employeesPanel);
+}
+public void showProvidersPanel (JPanel contentPanel) {
+    switchPanel(contentPanel, providersPanel);
+}
+
+public void showPriceCalculatorPanel (JPanel contentPanel) {
+    switchPanel (contentPanel, priceCalculatorPanel);
 }
 
 public void showReportsPanel(JPanel contentPanel) {
@@ -110,6 +121,12 @@ public void showReportsPanel(JPanel contentPanel) {
             }
             if (employeesPanel != null){
                 themeManager.applyThemeToComponent(employeesPanel);
+            }
+            if (priceCalculatorPanel != null){
+                themeManager.applyThemeToComponent(priceCalculatorPanel);
+            }
+            if (providersPanel != null){
+                themeManager.applyThemeToComponent(providersPanel);
             }
             if (reportsPanel != null) {
                 themeManager.applyThemeToComponent(reportsPanel);

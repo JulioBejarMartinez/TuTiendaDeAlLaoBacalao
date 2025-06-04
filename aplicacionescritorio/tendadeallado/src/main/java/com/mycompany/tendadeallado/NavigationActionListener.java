@@ -43,9 +43,16 @@ public class NavigationActionListener implements ActionListener {
             case "employees":
                 parent.showEmployeesPanel();
                 break;
+            case "suppliers":
+                parent.showProvidersPanel();
+                break;
                 
             case "reports":
                 parent.showReportsPanel();
+                break;
+                
+            case "tariffs":
+                parent.showPriceCalculatorPanel();
                 break;
                 
             case "settings":

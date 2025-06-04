@@ -38,6 +38,7 @@ public class NavigationPanel extends JPanel {
             createNavButton("Proveedores", "suppliers"),
             createNavButton("Empleados", "employees"),
             createNavButton("Informes", "reports"),
+            createNavButton("Tarifas", "tariffs"),
             createNavButton("Configuración", "settings")
         };
         

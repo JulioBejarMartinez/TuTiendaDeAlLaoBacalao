@@ -130,6 +130,15 @@ public class MainFrame extends JFrame {
         }
         setContentPanel(panel);
     }
+    
+    public void showProvidersPanel() {
+        JPanel panel = new ProvidersPanel (getStatusBar());
+        updateStatusBar("Gestión de Proveedores");
+        if (themeManager != null){
+            themeManager.applyThemeToComponent(panel);
+        }
+        setContentPanel(panel);
+    }
 
     public void showReportsPanel() {
         JPanel panel = new ReportsPanel(getStatusBar());
@@ -139,6 +148,15 @@ public class MainFrame extends JFrame {
         }
         setContentPanel(panel);
     }
+    public void showPriceCalculatorPanel(){
+    PriceCalculatorPanel priceCalculator = new PriceCalculatorPanel(getStatusBar());
+    JPanel panel = priceCalculator.createPanel();
+    updateStatusBar("Calculadora de Tarifas");
+    if (themeManager != null) {
+        themeManager.applyThemeToComponent(panel);
+    }
+    setContentPanel(panel);
+}
 
     public void showCustomizationPanel() {
     JPanel panel = new CustomizationPanel(contentPanel, themeManager, this);
@@ -196,6 +214,11 @@ public class MainFrame extends JFrame {
             e.printStackTrace();
         }
         return conn;
+    }
+
+    public static int getCurrentEmployeeId() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getCurrentEmployeeId'");
     }
 
 }

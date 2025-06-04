@@ -50,6 +50,9 @@ public class MenuActionListener implements ActionListener {
             case "customers":
                 parent.showCustomersPanel();
                 break;
+            case "tariffs":
+                parent.showPriceCalculatorPanel();
+                break;
                 
             case "reports":
                 parent.showReportsPanel();

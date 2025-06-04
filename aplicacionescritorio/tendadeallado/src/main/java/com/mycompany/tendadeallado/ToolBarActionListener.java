@@ -48,6 +48,14 @@ public class ToolBarActionListener implements ActionListener {
                 parent.showReportsPanel();
                 break;
                 
+            case "suppliers":
+                parent.showProvidersPanel();
+                break;
+                
+            case "tariffs":
+                parent.showPriceCalculatorPanel();
+                break;
+                
             case "settings":
                 parent.showCustomizationPanel();
                 break;
