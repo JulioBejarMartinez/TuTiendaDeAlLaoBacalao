@@ -240,4 +240,15 @@ public class ThemeManager {
     public void clearRegisteredComponents() {
         registeredComponents.clear();
     }
+
+   public void setTheme(String themeName) {
+    for (int i = 0; i < themeNames.length; i++) {
+        if (themeNames[i].equalsIgnoreCase(themeName)) {
+            applyTheme(i, null); // Puedes pasar el JFrame principal si lo deseas
+            return;
+        }
+    }
+    System.out.println("Tema no encontrado: " + themeName);
+}
+
 }

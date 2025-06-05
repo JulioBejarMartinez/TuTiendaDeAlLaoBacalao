@@ -8,9 +8,11 @@ import java.util.ArrayList;
 public class EmployeesPanel extends JPanel {
     private JLabel statusBar;
     private JTable table;
+    private ConfigReader configReader;
 
-    public EmployeesPanel(JLabel statusBar) {
+    public EmployeesPanel(JLabel statusBar, ConfigReader configReader) {
         this.statusBar = statusBar;
+        this. configReader = configReader;
         initializePanel();
     }
 
@@ -56,7 +58,7 @@ public class EmployeesPanel extends JPanel {
     private Object[][] loadEmployeesFromDB() {
         ArrayList<Object[]> rows = new ArrayList<>();
 
-        try (Connection conn = MainFrame.getDatabaseConnection();
+        try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                      "SELECT ID_Empleado, Nombre, Rol FROM Empleados");
              ResultSet rs = stmt.executeQuery()) {

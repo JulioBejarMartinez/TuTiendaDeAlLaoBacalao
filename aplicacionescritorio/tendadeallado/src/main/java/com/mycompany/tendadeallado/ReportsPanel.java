@@ -1,170 +1,289 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.tendadeallado;
 
-/**
- *
- * @author PRACTICAS
- */
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.*;
+import java.util.*;
+import javax.swing.table.DefaultTableModel;
 
 public class ReportsPanel extends JPanel {
     private JLabel statusBar;
-    
-    public ReportsPanel(JLabel statusBar) {
+    private JTable summaryTable;
+    private JComboBox<String> reportTypeCombo;
+    private JPanel chartPanel;
+    private ConfigReader configReader;
+
+    public ReportsPanel(JLabel statusBar, ConfigReader configReader) {
         this.statusBar = statusBar;
+       this.configReader = configReader;
         initializePanel();
     }
 
-    
     private void initializePanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Título
+
         JLabel titleLabel = new JLabel("Informes y Estadísticas");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        
-        // Panel de selección de informes
+
+        // ComboBox de tipos de informe
+        reportTypeCombo = new JComboBox<>(new String[]{
+            "Ventas por Período",
+            "Ventas por Producto",
+            "Ventas por Cliente",
+            "Inventario Actual",
+            "Productos de Baja Rotación"
+        });
+        reportTypeCombo.addActionListener(e -> actualizarInforme());
+
         JPanel selectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         selectionPanel.add(new JLabel("Tipo de Informe:"));
-        JComboBox<String> reportType = new JComboBox<>(new String[]{
-            "Ventas por Período", 
-            "Ventas por Producto", 
-            "Ventas por Cliente", 
-            "Inventario Actual", 
-            "Productos de Baja Rotación",
-            "Rendimiento de Empleados"
-        });
-        selectionPanel.add(reportType);
-        
-        JPanel periodPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        periodPanel.add(new JLabel("Período:"));
-        periodPanel.add(new JComboBox<>(new String[]{
-            "Hoy", 
-            "Esta Semana", 
-            "Este Mes", 
-            "Este Trimestre",
-            "Este Año",
-            "Personalizado..."
-        }));
-        
-        JPanel datePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        datePanel.add(new JLabel("Desde:"));
-        datePanel.add(new JTextField(10));
-        datePanel.add(new JLabel("Hasta:"));
-        datePanel.add(new JTextField(10));
-        datePanel.add(new JButton("Aplicar"));
-        
-        JPanel topPanel = new JPanel(new GridLayout(3, 1));
+        selectionPanel.add(reportTypeCombo);
+
+        JPanel topPanel = new JPanel(new GridLayout(2, 1));
         topPanel.add(titleLabel);
         topPanel.add(selectionPanel);
-        JPanel dateSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        dateSelectionPanel.add(periodPanel);
-        dateSelectionPanel.add(datePanel);
-        topPanel.add(dateSelectionPanel);
-        
-        // Panel para gráficos
-        JPanel chartPanel = new JPanel(new BorderLayout());
-        chartPanel.setBorder(BorderFactory.createLoweredBevelBorder());
-        
-        // Simulación de un gráfico (en una aplicación real, aquí iría un componente de gráficos)
-        JPanel dummyChartPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                
-                int width = getWidth();
-                int height = getHeight();
-                
-                // Fondo
-                g2.setColor(Color.WHITE);
-                g2.fillRect(0, 0, width, height);
-                
-                // Ejes
-                g2.setColor(Color.BLACK);
-                g2.drawLine(50, height - 50, width - 50, height - 50); // eje X
-                g2.drawLine(50, 50, 50, height - 50); // eje Y
-                
-                // Etiquetas en eje X
-                String[] months = {"Ene", "Feb", "Mar", "Abr", "May", "Jun"};
-                int xAxisLength = width - 100;
-                int step = xAxisLength / 6;
-                
-                for (int i = 0; i < 6; i++) {
-                    g2.drawString(months[i], 50 + i * step, height - 30);
-                }
-                
-                // Etiquetas en eje Y
-                for (int i = 0; i < 5; i++) {
-                    g2.drawString(String.valueOf((4 - i) * 25) + "K", 30, 50 + i * (height - 100) / 4);
-                }
-                
-                // Barras del gráfico
-                int[] values = {65, 45, 80, 30, 95, 60};
-                int maxHeight = height - 100;
-                
-                for (int i = 0; i < 6; i++) {
-                    int barHeight = values[i] * maxHeight / 100;
-                    g2.setColor(new Color(70, 130, 180, 200));
-                    g2.fillRect(60 + i * step, height - 50 - barHeight, step - 20, barHeight);
-                    g2.setColor(new Color(30, 70, 130));
-                    g2.drawRect(60 + i * step, height - 50 - barHeight, step - 20, barHeight);
-                }
-                
-                // Título del gráfico
-                g2.setColor(Color.BLACK);
-                g2.setFont(new Font("Arial", Font.BOLD, 14));
-                g2.drawString("Ventas Mensuales (en miles $)", width / 2 - 100, 30);
-            }
-        };
-        
-        chartPanel.add(dummyChartPanel, BorderLayout.CENTER);
-        
-        // Panel de resumen de datos
+
+        // Panel para el gráfico
+        chartPanel = new JPanel(new BorderLayout());
+        chartPanel.setPreferredSize(new Dimension(600, 200));
+        chartPanel.setBorder(BorderFactory.createTitledBorder("Gráfico"));
+
+        // Panel para la tabla resumen
         JPanel summaryPanel = new JPanel(new BorderLayout());
         summaryPanel.setBorder(BorderFactory.createTitledBorder("Resumen"));
-        
-        // Tabla de resumen
-        String[] summaryColumns = {"Período", "Ventas Totales", "Productos Vendidos", "Ticket Promedio", "Margen"};
-        Object[][] summaryData = {
-            {"Enero", "$65,432", "532", "$123.00", "32%"},
-            {"Febrero", "$45,678", "412", "$110.87", "29%"},
-            {"Marzo", "$80,123", "687", "$116.63", "35%"},
-            {"Abril", "$30,456", "289", "$105.38", "27%"},
-            {"Mayo", "$95,789", "823", "$116.39", "38%"},
-            {"Junio", "$60,234", "513", "$117.42", "33%"}
-        };
-        
-        JTable summaryTable = new JTable(summaryData, summaryColumns);
-        JScrollPane summaryScroll = new JScrollPane(summaryTable);
-        
-        summaryPanel.add(summaryScroll, BorderLayout.CENTER);
-        
-        // Panel de botones
+        summaryTable = new JTable();
+        summaryPanel.add(new JScrollPane(summaryTable), BorderLayout.CENTER);
+
+        // Botones de exportación
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(new JButton("Exportar a Excel"));
         buttonPanel.add(new JButton("Exportar a PDF"));
         buttonPanel.add(new JButton("Imprimir"));
-        
-        // Añadir componentes al panel principal
+
         add(topPanel, BorderLayout.NORTH);
-        
-        JPanel centerPanel = new JPanel(new BorderLayout());
-        centerPanel.add(chartPanel, BorderLayout.CENTER);
-        centerPanel.add(summaryPanel, BorderLayout.SOUTH);
-        
-        add(centerPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
-        
-        // Actualizar barra de estado
+        add(chartPanel, BorderLayout.CENTER);
+        add(summaryPanel, BorderLayout.SOUTH);
+        add(buttonPanel, BorderLayout.PAGE_END);
+
+        actualizarInforme();
+
         if (statusBar != null) {
-            statusBar.setText(" Informes - Visualizando informe de ventas por período");
+            statusBar.setText(" Informes - Cargando informe inicial...");
         }
+    }
+
+    private void actualizarInforme() {
+        String tipo = (String) reportTypeCombo.getSelectedItem();
+
+        switch (tipo) {
+            case "Ventas por Período":
+                cargarVentasPorPeriodo();
+                break;
+            case "Ventas por Producto":
+                cargarVentasPorProducto();
+                break;
+            case "Ventas por Cliente":
+                cargarVentasPorCliente();
+                break;
+            case "Inventario Actual":
+                cargarInventarioActual();
+                break;
+            case "Productos de Baja Rotación":
+                cargarProductosBajaRotacion();
+                break;
+        }
+    }
+
+    private void cargarVentasPorPeriodo() {
+        String[] columnas = {"Mes", "Ventas Totales", "Cantidad de Ventas", "Ticket Promedio"};
+        DefaultTableModel model = new DefaultTableModel(columnas, 0);
+
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            String sql = "SELECT DATE_FORMAT(FechaHora, '%Y-%m') AS Mes, " +
+                         "COUNT(*) AS NumVentas, SUM(Total) AS TotalVentas, AVG(Total) AS TicketPromedio " +
+                         "FROM Ventas " +
+                         "GROUP BY Mes ORDER BY Mes DESC LIMIT 6";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Object[] fila = {
+                    rs.getString("Mes"),
+                    String.format("$%.2f", rs.getDouble("TotalVentas")),
+                    rs.getInt("NumVentas"),
+                    String.format("$%.2f", rs.getDouble("TicketPromedio"))
+                };
+                model.addRow(fila);
+            }
+
+            summaryTable.setModel(model);
+            pintarGraficoSimple(model);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error cargando datos: " + e.getMessage());
+        }
+    }
+
+    private void cargarVentasPorProducto() {
+        String[] columnas = {"Producto", "Cantidad Vendida", "Total Generado"};
+        DefaultTableModel model = new DefaultTableModel(columnas, 0);
+
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            String sql = """
+                SELECT p.Nombre, SUM(dv.Cantidad) AS CantidadVendida, SUM(dv.Cantidad * p.PrecioProducto) AS TotalGenerado
+                FROM DetallesVenta dv
+                JOIN Productos p ON p.ID_Producto = dv.ID_Producto
+                GROUP BY p.ID_Producto
+                ORDER BY CantidadVendida DESC LIMIT 10
+                """;
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Object[] fila = {
+                    rs.getString("Nombre"),
+                    rs.getInt("CantidadVendida"),
+                    String.format("$%.2f", rs.getDouble("TotalGenerado"))
+                };
+                model.addRow(fila);
+            }
+
+            summaryTable.setModel(model);
+            pintarGraficoSimple(model);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error cargando datos: " + e.getMessage());
+        }
+    }
+
+    private void cargarVentasPorCliente() {
+        String[] columnas = {"Cliente", "Total Comprado", "Nº Compras"};
+        DefaultTableModel model = new DefaultTableModel(columnas, 0);
+
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            String sql = """
+                SELECT c.Nombre, SUM(v.Total) AS TotalComprado, COUNT(*) AS NumCompras
+                FROM Ventas v
+                JOIN Clientes c ON c.ID_Cliente = v.ID_Cliente
+                GROUP BY v.ID_Cliente
+                ORDER BY TotalComprado DESC LIMIT 10
+                """;
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Object[] fila = {
+                    rs.getString("Nombre"),
+                    String.format("$%.2f", rs.getDouble("TotalComprado")),
+                    rs.getInt("NumCompras")
+                };
+                model.addRow(fila);
+            }
+
+            summaryTable.setModel(model);
+            pintarGraficoSimple(model);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
+    }
+
+    private void cargarInventarioActual() {
+        String[] columnas = {"Producto", "Stock Actual", "Stock Mínimo", "Precio"};
+        DefaultTableModel model = new DefaultTableModel(columnas, 0);
+
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            String sql = "SELECT Nombre, StockActual, StockMinimo, PrecioProducto FROM Productos ORDER BY Nombre";
+            ResultSet rs = conn.createStatement().executeQuery(sql);
+
+            while (rs.next()) {
+                Object[] fila = {
+                    rs.getString("Nombre"),
+                    rs.getInt("StockActual"),
+                    rs.getInt("StockMinimo"),
+                    String.format("$%.2f", rs.getDouble("PrecioProducto"))
+                };
+                model.addRow(fila);
+            }
+
+            summaryTable.setModel(model);
+            chartPanel.removeAll();
+            chartPanel.add(new JLabel("Inventario actual cargado."), BorderLayout.CENTER);
+            revalidate();
+            repaint();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
+    }
+
+    private void cargarProductosBajaRotacion() {
+        String[] columnas = {"Producto", "Veces Vendido", "Stock Actual"};
+        DefaultTableModel model = new DefaultTableModel(columnas, 0);
+
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            String sql = """
+                SELECT p.Nombre, IFNULL(SUM(dv.Cantidad), 0) AS VecesVendido, p.StockActual
+                FROM Productos p
+                LEFT JOIN DetallesVenta dv ON p.ID_Producto = dv.ID_Producto
+                GROUP BY p.ID_Producto
+                ORDER BY VecesVendido ASC LIMIT 10
+                """;
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Object[] fila = {
+                    rs.getString("Nombre"),
+                    rs.getInt("VecesVendido"),
+                    rs.getInt("StockActual")
+                };
+                model.addRow(fila);
+            }
+
+            summaryTable.setModel(model);
+            pintarGraficoSimple(model);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
+    }
+
+    private void pintarGraficoSimple(DefaultTableModel model) {
+        chartPanel.removeAll();
+        JPanel dummy = new JPanel() {
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (model.getRowCount() == 0) return;
+                Graphics2D g2 = (Graphics2D) g;
+                int width = getWidth(), height = getHeight();
+                g2.setColor(Color.WHITE);
+                g2.fillRect(0, 0, width, height);
+
+                int barWidth = width / model.getRowCount();
+                int max = 1;
+
+                for (int i = 0; i < model.getRowCount(); i++) {
+                    try {
+                        String raw = model.getValueAt(i, 1).toString().replace("$", "").replace(",", "");
+                        max = Math.max(max, (int) Double.parseDouble(raw));
+                    } catch (Exception ignored) {}
+                }
+
+                for (int i = 0; i < model.getRowCount(); i++) {
+                    try {
+                        String label = model.getValueAt(i, 0).toString();
+                        String raw = model.getValueAt(i, 1).toString().replace("$", "").replace(",", "");
+                        int value = (int) Double.parseDouble(raw);
+                        int barHeight = (int) ((value / (double) max) * (height - 60));
+
+                        g2.setColor(new Color(70, 130, 180));
+                        g2.fillRect(i * barWidth + 10, height - barHeight - 20, barWidth - 20, barHeight);
+                        g2.setColor(Color.BLACK);
+                        g2.drawString(label, i * barWidth + 10, height - 5);
+                    } catch (Exception ignored) {}
+                }
+            }
+        };
+        chartPanel.add(dummy, BorderLayout.CENTER);
+        revalidate();
+        repaint();
     }
 }

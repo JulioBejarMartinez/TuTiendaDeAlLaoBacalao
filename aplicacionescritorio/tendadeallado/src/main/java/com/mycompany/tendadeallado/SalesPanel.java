@@ -5,6 +5,8 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SalesPanel extends JPanel {
     private JLabel statusBar;
@@ -16,10 +18,12 @@ public class SalesPanel extends JPanel {
     private JButton procesarPagoBtn;
     private JButton nuevaVentaBtn;
     private JButton cancelarVentaBtn;
+    private ConfigReader configReader;
 
 
-    public SalesPanel(JLabel statusBar) {
+    public SalesPanel(JLabel statusBar, ConfigReader configReader) {
         this.statusBar = statusBar;
+        this.configReader = configReader;
         initializePanel();
     }
 
@@ -28,8 +32,12 @@ public class SalesPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Establecer conexión a la base de datos
-        connection = MainFrame.getDatabaseConnection();
+        try {
+            // Establecer conexión a la base de datos
+            connection = DatabaseHelper.getConnection();
+        } catch (SQLException ex) {
+            Logger.getLogger(SalesPanel.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         JLabel titleLabel = new JLabel("Gestión de Ventas");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));

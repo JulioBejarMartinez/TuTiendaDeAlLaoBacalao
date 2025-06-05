@@ -15,23 +15,27 @@ public class PanelManager {
     private PriceCalculatorPanel priceCalculatorPanel;
     private CustomizationPanel customizationPanel;
     private ThemeManager themeManager;
+    private ConfigReader configReader;
     
     public PanelManager(MainFrame parent) {
         this.parent = parent;
         // Inicializar el ThemeManager
         this.themeManager = new ThemeManager();
+        this.configReader = new ConfigReader("config.xml");
+        DatabaseHelper.setConfigReader(configReader);
+
         initializePanels();
     }
     
     private void initializePanels() {
-    homePanel = new HomePanel();
-    inventoryPanel = new InventoryPanel(parent.getStatusBar());
-    salesPanel = new SalesPanel(parent.getStatusBar());
-    customersPanel = new CustomersPanel(parent.getStatusBar());
-    employeesPanel = new EmployeesPanel(parent.getStatusBar());
-    providersPanel = new ProvidersPanel(parent.getStatusBar());
+    homePanel = new HomePanel(configReader);
+    inventoryPanel = new InventoryPanel(parent.getStatusBar(), configReader);
+    salesPanel = new SalesPanel(parent.getStatusBar(), configReader);
+    customersPanel = new CustomersPanel(parent.getStatusBar(), configReader);
+    employeesPanel = new EmployeesPanel(parent.getStatusBar(), configReader);
+    providersPanel = new ProvidersPanel(parent.getStatusBar(), configReader);
     priceCalculatorPanel = new PriceCalculatorPanel(parent.getStatusBar());
-    reportsPanel = new ReportsPanel(parent.getStatusBar());
+    reportsPanel = new ReportsPanel(parent.getStatusBar(), configReader);
     
     customizationPanel = null;  // se crea dinámicamente
 }

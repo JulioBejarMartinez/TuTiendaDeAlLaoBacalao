@@ -8,9 +8,12 @@ import java.util.ArrayList;
 public class CustomersPanel extends JPanel {
     private JLabel statusBar;
     private JTable table;
+    private ConfigReader configReader;
 
-    public CustomersPanel(JLabel statusBar) {
+    public CustomersPanel(JLabel statusBar, ConfigReader configReader) {
         this.statusBar = statusBar;
+        this.configReader = configReader;
+
         initializePanel();
     }
 
@@ -54,11 +57,16 @@ public class CustomersPanel extends JPanel {
     }
 
     private Object[][] loadCustomersFromDB() {
-        ArrayList<Object[]> rows = new ArrayList<>();
+    ArrayList<Object[]> rows = new ArrayList<>();
 
-        try (Connection conn = MainFrame.getDatabaseConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                     "SELECT ID_Cliente, Nombre, Apellido, Email, Telefono, PuntosFidelidad FROM Clientes");
+    try {
+        String url = "jdbc:mysql://" + configReader.getDbHost() + ":" +
+                     configReader.getDbPort() + "/" +
+                     configReader.getDbName() + "?useSSL=false&serverTimezone=UTC";
+        Connection conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
+
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT ID_Cliente, Nombre, Apellido, Email, Telefono, PuntosFidelidad FROM Clientes");
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
@@ -72,16 +80,22 @@ public class CustomersPanel extends JPanel {
                 rows.add(new Object[]{id, nombre, apellido, email, telefono, puntos});
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error al cargar clientes: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            conn.close();
         }
 
-        return rows.toArray(new Object[0][]);
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error al cargar clientes: " + e.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
     }
+
+    return rows.toArray(new Object[0][]);
+}
+
 
     public JPanel createPanel() {
         return this;
     }
 }
+

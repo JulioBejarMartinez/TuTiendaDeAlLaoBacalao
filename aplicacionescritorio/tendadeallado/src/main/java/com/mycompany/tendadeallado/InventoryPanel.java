@@ -2,24 +2,32 @@ package com.mycompany.tendadeallado;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.sql.*;
 import java.io.*;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
 
 public class InventoryPanel extends JPanel {
     private JLabel statusBar;
     private JTable table;
     private DefaultTableModel tableModel;
     private List<Proveedor> proveedores;
+    private ConfigReader configReader;
 
-    public InventoryPanel(JLabel statusBar) {
+
+    public InventoryPanel(JLabel statusBar, ConfigReader configReader) {
         this.statusBar = statusBar;
         this.proveedores = new ArrayList<>();
+        this.configReader = configReader;
+
         initializePanel();
     }
 
@@ -33,15 +41,32 @@ public class InventoryPanel extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
-        String[] columnNames = {"ID", "Nombre", "Descripción", "Precio", "Stock", "Stock Mín.", "Categoría", "Proveedor"};
+        String[] columnNames = {"ID", "Imagen", "Nombre", "Descripción", "Precio", "Stock", "Stock Mín.", "Categoría", "Proveedor"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // Hacer la tabla no editable directamente
             }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 1) { // Columna de imagen
+                    return ImageIcon.class;
+                }
+                return super.getColumnClass(columnIndex);
+            }
         };
+        
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowHeight(80); // Aumentar altura de filas para las imágenes
+        
+        // Configurar renderer para la columna de imagen
+        table.getColumnModel().getColumn(1).setCellRenderer(new ImageTableCellRenderer());
+        table.getColumnModel().getColumn(1).setPreferredWidth(100);
+        table.getColumnModel().getColumn(1).setMaxWidth(100);
+        table.getColumnModel().getColumn(1).setMinWidth(80);
+        
         JScrollPane scrollPane = new JScrollPane(table);
 
         // Panel de botones
@@ -53,6 +78,7 @@ public class InventoryPanel extends JPanel {
         JButton btnImportar = new JButton("Importar CSV");
         JButton btnExportar = new JButton("Exportar CSV");
         JButton btnRefrescar = new JButton("Refrescar");
+        JButton btnVerImagen = new JButton("Ver Imagen Grande");
 
         buttonPanel.add(btnNuevo);
         buttonPanel.add(btnEditar);
@@ -60,6 +86,7 @@ public class InventoryPanel extends JPanel {
         buttonPanel.add(btnImportar);
         buttonPanel.add(btnExportar);
         buttonPanel.add(btnRefrescar);
+        buttonPanel.add(btnVerImagen);
 
         // Añadir componentes
         add(topPanel, BorderLayout.NORTH);
@@ -73,6 +100,7 @@ public class InventoryPanel extends JPanel {
         btnImportar.addActionListener(e -> importarProductos());
         btnExportar.addActionListener(e -> exportarProductos());
         btnRefrescar.addActionListener(e -> cargarProductosDesdeBaseDeDatos());
+        btnVerImagen.addActionListener(e -> mostrarImagenGrande());
 
         // Cargar proveedores y productos desde la base de datos
         cargarProveedores();
@@ -81,32 +109,51 @@ public class InventoryPanel extends JPanel {
 
     private void cargarProveedores() {
         proveedores.clear();
-        try (Connection conn = MainFrame.getDatabaseConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT ID_Proveedor, Nombre FROM Proveedores")) {
+        try {
+    String url = "jdbc:mysql://" + configReader.getDbHost() + ":" +
+                 configReader.getDbPort() + "/" +
+                 configReader.getDbName() + "?useSSL=false&serverTimezone=UTC";
 
-            while (rs.next()) {
-                proveedores.add(new Proveedor(rs.getInt("ID_Proveedor"), rs.getString("Nombre")));
-            }
+    Connection conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
 
-        } catch (SQLException e) {
-            System.err.println("Error al cargar proveedores: " + e.getMessage());
-        }
+    try (Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT ID_Proveedor, Nombre FROM Proveedores")) {
+
+               while (rs.next()) {
+                   proveedores.add(new Proveedor(rs.getInt("ID_Proveedor"), rs.getString("Nombre")));
+               }
+
+           } finally {
+               conn.close();
+           }
+
+       } catch (SQLException e) {
+           System.err.println("Error al cargar proveedores: " + e.getMessage());
+       }
     }
 
-    private void cargarProductosDesdeBaseDeDatos() {
-        tableModel.setRowCount(0);
 
-        try (Connection conn = MainFrame.getDatabaseConnection();
-             Statement stmt = conn.createStatement();
+    private void cargarProductosDesdeBaseDeDatos() {
+    tableModel.setRowCount(0);
+
+    try {
+        String url = "jdbc:mysql://" + configReader.getDbHost() + ":" +
+                     configReader.getDbPort() + "/" +
+                     configReader.getDbName() + "?useSSL=false&serverTimezone=UTC";
+        Connection conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
+
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(
                  "SELECT p.ID_Producto, p.Nombre, p.Descripcion, p.PrecioProducto, " +
-                 "p.StockActual, p.StockMinimo, p.Tipo, pr.Nombre as NombreProveedor " +
+                 "p.StockActual, p.StockMinimo, p.Tipo, p.ImagenProducto, pr.Nombre as NombreProveedor " +
                  "FROM Productos p LEFT JOIN Proveedores pr ON p.ID_Proveedor = pr.ID_Proveedor")) {
 
             while (rs.next()) {
+                ImageIcon imagen = cargarImagenProducto(rs.getString("ImagenProducto"));
+
                 Object[] row = {
                     rs.getInt("ID_Producto"),
+                    imagen,
                     rs.getString("Nombre"),
                     rs.getString("Descripcion"),
                     String.format("%.2f €", rs.getDouble("PrecioProducto")),
@@ -122,12 +169,161 @@ public class InventoryPanel extends JPanel {
                 statusBar.setText(" Gestión de Inventario - " + tableModel.getRowCount() + " productos en la lista");
             }
 
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al cargar productos: " + e.getMessage(), 
-                "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
+        } finally {
+            conn.close();
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al cargar productos: " + e.getMessage(),
+            "Error", JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+    }
+}
+
+
+    private ImageIcon cargarImagenProducto(String rutaImagen) {
+    if (rutaImagen == null || rutaImagen.trim().isEmpty()) {
+        return crearImagenPorDefecto();
+    }
+
+    try {
+        ImageIcon icon = null;
+
+        // Si no es una URL completa, construir la URL desde GitHub
+        if (!rutaImagen.startsWith("http://") && !rutaImagen.startsWith("https://") && !rutaImagen.startsWith("ftp://")) {
+            rutaImagen = "https://raw.githubusercontent.com/JulioBejarMartinez/TuTiendaDeAlLaoBacalao/master/" + rutaImagen;
+        }
+
+        URL url = new URL(rutaImagen);
+        BufferedImage img = ImageIO.read(url);
+        if (img != null) {
+            icon = new ImageIcon(redimensionarImagen(img, 70, 70));
+        }
+
+        return icon != null ? icon : crearImagenPorDefecto();
+
+    } catch (Exception e) {
+        System.err.println("Error al cargar imagen: " + rutaImagen + " - " + e.getMessage());
+        return crearImagenPorDefecto();
+    }
+}
+
+
+    private ImageIcon crearImagenPorDefecto() {
+        BufferedImage img = new BufferedImage(70, 70, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = img.createGraphics();
+        g2d.setColor(Color.LIGHT_GRAY);
+        g2d.fillRect(0, 0, 70, 70);
+        g2d.setColor(Color.DARK_GRAY);
+        g2d.drawRect(0, 0, 69, 69);
+        g2d.setFont(new Font("Arial", Font.BOLD, 10));
+        g2d.drawString("Sin", 25, 30);
+        g2d.drawString("Imagen", 17, 45);
+        g2d.dispose();
+        return new ImageIcon(img);
+    }
+
+    private BufferedImage redimensionarImagen(BufferedImage original, int ancho, int alto) {
+        BufferedImage redimensionada = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = redimensionada.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.drawImage(original, 0, 0, ancho, alto, null);
+        g2d.dispose();
+        return redimensionada;
+    }
+
+    private void mostrarImagenGrande() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un producto para ver su imagen.", 
+                "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int id = (int) tableModel.getValueAt(selectedRow, 0);
+        String nombreProducto = (String) tableModel.getValueAt(selectedRow, 2);
+        
+        // Obtener la ruta de la imagen de la base de datos
+        String rutaImagen = obtenerRutaImagenProducto(id);
+        
+        if (rutaImagen != null && !rutaImagen.trim().isEmpty()) {
+            mostrarDialogoImagen(rutaImagen, nombreProducto);
+        } else {
+            JOptionPane.showMessageDialog(this, "Este producto no tiene imagen asociada.", 
+                "Sin imagen", JOptionPane.INFORMATION_MESSAGE);
         }
     }
+
+    private String obtenerRutaImagenProducto(int idProducto) {
+        try {
+    String url = "jdbc:mysql://" + configReader.getDbHost() + ":" +
+                 configReader.getDbPort() + "/" +
+                 configReader.getDbName() + "?useSSL=false&serverTimezone=UTC";
+
+    Connection conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
+
+    try (PreparedStatement stmt = conn.prepareStatement(
+            "SELECT ImagenProducto FROM Productos WHERE ID_Producto = ?")) {
+
+        stmt.setInt(1, idProducto);
+        ResultSet rs = stmt.executeQuery();
+
+        if (rs.next()) {
+            return rs.getString("ImagenProducto");
+        }
+
+            } finally {
+                conn.close();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+
+    }
+
+    private void mostrarDialogoImagen(String rutaImagen, String nombreProducto) {
+    JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Imagen - " + nombreProducto);
+    dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
+    try {
+        ImageIcon icon = null;
+
+        // Si no es URL completa, convertir a raw.githubusercontent
+        if (!rutaImagen.startsWith("http://") && !rutaImagen.startsWith("https://") && !rutaImagen.startsWith("ftp://")) {
+            rutaImagen = "https://raw.githubusercontent.com/JulioBejarMartinez/TuTiendaDeAlLaoBacalao/master/" + rutaImagen;
+        }
+
+        URL url = new URL(rutaImagen);
+        BufferedImage img = ImageIO.read(url);
+        if (img != null) {
+            // Redimensionar manteniendo proporción para vista grande
+            int maxWidth = 400;
+            int maxHeight = 400;
+            double scale = Math.min((double) maxWidth / img.getWidth(), (double) maxHeight / img.getHeight());
+            int newWidth = (int) (img.getWidth() * scale);
+            int newHeight = (int) (img.getHeight() * scale);
+            icon = new ImageIcon(redimensionarImagen(img, newWidth, newHeight));
+        }
+
+        if (icon != null) {
+            JLabel labelImagen = new JLabel(icon);
+            labelImagen.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            dialog.add(labelImagen);
+            dialog.pack();
+            dialog.setLocationRelativeTo(this);
+            dialog.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(this, "No se pudo cargar la imagen.", 
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error al mostrar la imagen: " + e.getMessage(), 
+            "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
 
     private void crearNuevoProducto() {
         ProductoDialog dialog = new ProductoDialog(SwingUtilities.getWindowAncestor(this), proveedores);
@@ -173,21 +369,26 @@ public class InventoryPanel extends JPanel {
     }
 
     private void eliminarProductoSeleccionado() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Seleccione un producto para eliminar.", 
-                "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+    int selectedRow = table.getSelectedRow();
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(this, "Seleccione un producto para eliminar.", 
+            "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
 
-        int confirm = JOptionPane.showConfirmDialog(this, 
-            "¿Estás seguro de que quieres eliminar este producto?", 
-            "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
-            
-        if (confirm == JOptionPane.YES_OPTION) {
-            int id = (int) tableModel.getValueAt(selectedRow, 0);
+    int confirm = JOptionPane.showConfirmDialog(this, 
+        "¿Estás seguro de que quieres eliminar este producto?", 
+        "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
+        
+    if (confirm == JOptionPane.YES_OPTION) {
+        int id = (int) tableModel.getValueAt(selectedRow, 0);
 
-            try (Connection conn = MainFrame.getDatabaseConnection();
+        try {
+            String url = "jdbc:mysql://" + configReader.getDbHost() + ":" +
+                         configReader.getDbPort() + "/" +
+                         configReader.getDbName() + "?useSSL=false&serverTimezone=UTC";
+
+            try (Connection conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
                  PreparedStatement stmt = conn.prepareStatement("DELETE FROM Productos WHERE ID_Producto = ?")) {
 
                 stmt.setInt(1, id);
@@ -201,14 +402,15 @@ public class InventoryPanel extends JPanel {
                         statusBar.setText(" Producto eliminado");
                     }
                 }
-
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(this, "Error al eliminar producto: " + e.getMessage(), 
-                    "Error", JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
             }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al eliminar producto: " + e.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
+}
+
 
     private void importarProductos() {
         JFileChooser fileChooser = new JFileChooser();
@@ -228,7 +430,7 @@ public class InventoryPanel extends JPanel {
                 while ((line = br.readLine()) != null) {
                     String[] data = line.split(",");
                     
-                    if (data.length >= 7) {
+                    if (data.length >= 8) { // Ahora incluye ImagenProducto
                         try {
                             Producto producto = new Producto();
                             producto.setNombre(data[0].trim());
@@ -238,6 +440,7 @@ public class InventoryPanel extends JPanel {
                             producto.setStockMinimo(Integer.parseInt(data[4].trim()));
                             producto.setTipo(data[5].trim());
                             producto.setIdProveedor(Integer.parseInt(data[6].trim()));
+                            producto.setImagenProducto(data[7].trim());
                             
                             if (insertarProducto(producto)) {
                                 imported++;
@@ -274,23 +477,25 @@ public class InventoryPanel extends JPanel {
             
             try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
                 // Escribir encabezados
-                pw.println("Nombre,Descripcion,Precio,StockActual,StockMinimo,Tipo,ID_Proveedor");
+                pw.println("Nombre,Descripcion,Precio,StockActual,StockMinimo,Tipo,ID_Proveedor,ImagenProducto");
                 
                 // Escribir datos
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
-                    String nombre = (String) tableModel.getValueAt(i, 1);
-                    String descripcion = (String) tableModel.getValueAt(i, 2);
-                    String precio = ((String) tableModel.getValueAt(i, 3)).replace(" €", "").replace(",", ".");
-                    int stockActual = (Integer) tableModel.getValueAt(i, 4);
-                    int stockMinimo = (Integer) tableModel.getValueAt(i, 5);
-                    String tipo = (String) tableModel.getValueAt(i, 6);
+                    String nombre = (String) tableModel.getValueAt(i, 2);
+                    String descripcion = (String) tableModel.getValueAt(i, 3);
+                    String precio = ((String) tableModel.getValueAt(i, 4)).replace(" €", "").replace(",", ".");
+                    int stockActual = (Integer) tableModel.getValueAt(i, 5);
+                    int stockMinimo = (Integer) tableModel.getValueAt(i, 6);
+                    String tipo = (String) tableModel.getValueAt(i, 7);
                     
-                    // Obtener ID del proveedor
+                    // Obtener ID del proveedor e imagen
                     int idProducto = (Integer) tableModel.getValueAt(i, 0);
                     int idProveedor = obtenerIdProveedorPorProducto(idProducto);
+                    String imagenProducto = obtenerRutaImagenProducto(idProducto);
                     
-                    pw.println(String.format("%s,%s,%s,%d,%d,%s,%d", 
-                        nombre, descripcion, precio, stockActual, stockMinimo, tipo, idProveedor));
+                    pw.println(String.format("%s,%s,%s,%d,%d,%s,%d,%s", 
+                        nombre, descripcion, precio, stockActual, stockMinimo, tipo, idProveedor, 
+                        imagenProducto != null ? imagenProducto : ""));
                 }
                 
                 JOptionPane.showMessageDialog(this, "Productos exportados correctamente a: " + file.getAbsolutePath(), 
@@ -304,9 +509,14 @@ public class InventoryPanel extends JPanel {
     }
 
     private boolean insertarProducto(Producto producto) {
-        try (Connection conn = MainFrame.getDatabaseConnection();
+    try {
+        String url = "jdbc:mysql://" + configReader.getDbHost() + ":" +
+                     configReader.getDbPort() + "/" +
+                     configReader.getDbName() + "?useSSL=false&serverTimezone=UTC";
+
+        try (Connection conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
              PreparedStatement stmt = conn.prepareStatement(
-                 "INSERT INTO Productos (Nombre, Descripcion, PrecioProducto, StockActual, StockMinimo, Tipo, ID_Proveedor) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                 "INSERT INTO Productos (Nombre, Descripcion, PrecioProducto, StockActual, StockMinimo, Tipo, ID_Proveedor, ImagenProducto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
 
             stmt.setString(1, producto.getNombre());
             stmt.setString(2, producto.getDescripcion());
@@ -315,20 +525,23 @@ public class InventoryPanel extends JPanel {
             stmt.setInt(5, producto.getStockMinimo());
             stmt.setString(6, producto.getTipo());
             stmt.setInt(7, producto.getIdProveedor());
+            stmt.setString(8, producto.getImagenProducto());
 
             return stmt.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al insertar producto: " + e.getMessage(), 
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
         }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al insertar producto: " + e.getMessage(), 
+            "Error", JOptionPane.ERROR_MESSAGE);
+        return false;
     }
+}
+
 
     private boolean actualizarProducto(Producto producto) {
-        try (Connection conn = MainFrame.getDatabaseConnection();
+        try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                 "UPDATE Productos SET Nombre=?, Descripcion=?, PrecioProducto=?, StockActual=?, StockMinimo=?, Tipo=?, ID_Proveedor=? WHERE ID_Producto=?")) {
+                 "UPDATE Productos SET Nombre=?, Descripcion=?, PrecioProducto=?, StockActual=?, StockMinimo=?, Tipo=?, ID_Proveedor=?, ImagenProducto=? WHERE ID_Producto=?")) {
 
             stmt.setString(1, producto.getNombre());
             stmt.setString(2, producto.getDescripcion());
@@ -337,7 +550,8 @@ public class InventoryPanel extends JPanel {
             stmt.setInt(5, producto.getStockMinimo());
             stmt.setString(6, producto.getTipo());
             stmt.setInt(7, producto.getIdProveedor());
-            stmt.setInt(8, producto.getId());
+            stmt.setString(8, producto.getImagenProducto());
+            stmt.setInt(9, producto.getId());
 
             return stmt.executeUpdate() > 0;
 
@@ -349,7 +563,7 @@ public class InventoryPanel extends JPanel {
     }
 
     private Producto obtenerProductoPorId(int id) {
-        try (Connection conn = MainFrame.getDatabaseConnection();
+        try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                  "SELECT * FROM Productos WHERE ID_Producto = ?")) {
 
@@ -366,6 +580,7 @@ public class InventoryPanel extends JPanel {
                 producto.setStockMinimo(rs.getInt("StockMinimo"));
                 producto.setTipo(rs.getString("Tipo"));
                 producto.setIdProveedor(rs.getInt("ID_Proveedor"));
+                producto.setImagenProducto(rs.getString("ImagenProducto"));
                 return producto;
             }
 
@@ -376,7 +591,7 @@ public class InventoryPanel extends JPanel {
     }
 
     private int obtenerIdProveedorPorProducto(int idProducto) {
-        try (Connection conn = MainFrame.getDatabaseConnection();
+        try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                  "SELECT ID_Proveedor FROM Productos WHERE ID_Producto = ?")) {
 
@@ -393,6 +608,30 @@ public class InventoryPanel extends JPanel {
         return 0;
     }
 
+    // Renderer personalizado para mostrar imágenes en la tabla
+    private static class ImageTableCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column) {
+            
+            if (value instanceof ImageIcon) {
+                JLabel label = new JLabel((ImageIcon) value);
+                label.setHorizontalAlignment(JLabel.CENTER);
+                
+                if (isSelected) {
+                    label.setOpaque(true);
+                    label.setBackground(table.getSelectionBackground());
+                } else {
+                    label.setOpaque(false);
+                }
+                
+                return label;
+            }
+            
+            return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        }
+    }
+
     // Clases auxiliares
     public static class Producto {
         private int id;
@@ -403,6 +642,7 @@ public class InventoryPanel extends JPanel {
         private int stockMinimo;
         private String tipo;
         private int idProveedor;
+        private String imagenProducto;
 
         // Getters y setters
         public int getId() { return id; }
@@ -421,6 +661,8 @@ public class InventoryPanel extends JPanel {
         public void setTipo(String tipo) { this.tipo = tipo; }
         public int getIdProveedor() { return idProveedor; }
         public void setIdProveedor(int idProveedor) { this.idProveedor = idProveedor; }
+        public String getImagenProducto() { return imagenProducto; }
+        public void setImagenProducto(String imagenProducto) { this.imagenProducto = imagenProducto; }
     }
 
     public static class Proveedor {
@@ -450,6 +692,9 @@ public class InventoryPanel extends JPanel {
         private JTextField txtStockMinimo;
         private JComboBox<String> cmbTipo;
         private JComboBox<Proveedor> cmbProveedor;
+        private JTextField txtImagenProducto;
+        private JButton btnSeleccionarImagen;
+        private JLabel lblVistaPrevia;
         private boolean confirmed = false;
 
         public ProductoDialog(Window parent, List<Proveedor> proveedores) {
@@ -528,6 +773,38 @@ public class InventoryPanel extends JPanel {
             cmbProveedor = new JComboBox<>(proveedores.toArray(new Proveedor[0]));
             mainPanel.add(cmbProveedor, gbc);
 
+            // Imagen del producto
+            gbc.gridx = 0; gbc.gridy = 7;
+            mainPanel.add(new JLabel("Imagen:"), gbc);
+            gbc.gridx = 1;
+            JPanel panelImagen = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            txtImagenProducto = new JTextField(15);
+            btnSeleccionarImagen = new JButton("...");
+            btnSeleccionarImagen.setPreferredSize(new Dimension(30, txtImagenProducto.getPreferredSize().height));
+            panelImagen.add(txtImagenProducto);
+            panelImagen.add(btnSeleccionarImagen);
+            mainPanel.add(panelImagen, gbc);
+
+            // Vista previa de la imagen
+            gbc.gridx = 0; gbc.gridy = 8;
+            mainPanel.add(new JLabel("Vista previa:"), gbc);
+            gbc.gridx = 1;
+            lblVistaPrevia = new JLabel();
+            lblVistaPrevia.setPreferredSize(new Dimension(100, 100));
+            lblVistaPrevia.setBorder(BorderFactory.createLoweredBevelBorder());
+            lblVistaPrevia.setHorizontalAlignment(JLabel.CENTER);
+            lblVistaPrevia.setText("Sin imagen");
+            mainPanel.add(lblVistaPrevia, gbc);
+
+            // Eventos para la imagen
+            btnSeleccionarImagen.addActionListener(e -> seleccionarImagen());
+            txtImagenProducto.addActionListener(e -> actualizarVistaPrevia());
+            txtImagenProducto.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+                public void changedUpdate(javax.swing.event.DocumentEvent e) { actualizarVistaPrevia(); }
+                public void removeUpdate(javax.swing.event.DocumentEvent e) { actualizarVistaPrevia(); }
+                public void insertUpdate(javax.swing.event.DocumentEvent e) { actualizarVistaPrevia(); }
+            });
+
             // Botones
             JPanel buttonPanel = new JPanel(new FlowLayout());
             JButton btnGuardar = new JButton("Guardar");
@@ -549,6 +826,90 @@ public class InventoryPanel extends JPanel {
             add(buttonPanel, BorderLayout.SOUTH);
         }
 
+        private void seleccionarImagen() {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileFilter(new FileNameExtensionFilter("Imágenes", "jpg", "jpeg", "png", "gif", "bmp"));
+            
+            int opcion = JOptionPane.showOptionDialog(this, 
+                "¿Cómo desea especificar la imagen?", 
+                "Seleccionar imagen", 
+                JOptionPane.YES_NO_CANCEL_OPTION, 
+                JOptionPane.QUESTION_MESSAGE, 
+                null, 
+                new String[]{"Archivo local", "URL/FTP", "Cancelar"}, 
+                "Archivo local");
+                
+            if (opcion == 0) { // Archivo local
+                if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                    File file = fileChooser.getSelectedFile();
+                    txtImagenProducto.setText(file.getAbsolutePath());
+                    actualizarVistaPrevia();
+                }
+            } else if (opcion == 1) { // URL/FTP
+                String url = JOptionPane.showInputDialog(this, 
+                    "Ingrese la URL de la imagen:", 
+                    "URL de imagen", 
+                    JOptionPane.PLAIN_MESSAGE);
+                if (url != null && !url.trim().isEmpty()) {
+                    txtImagenProducto.setText(url.trim());
+                    actualizarVistaPrevia();
+                }
+            }
+        }
+
+        private void actualizarVistaPrevia() {
+    String rutaImagen = txtImagenProducto.getText().trim();
+
+    if (rutaImagen.isEmpty()) {
+        lblVistaPrevia.setIcon(null);
+        lblVistaPrevia.setText("Sin imagen");
+        return;
+    }
+
+    SwingUtilities.invokeLater(() -> {
+        try {
+            ImageIcon icon = null;
+
+            // Si es ruta relativa tipo: "imagenes/xxx.jpg"
+            String rutaFinal;
+            if (!rutaImagen.startsWith("http://") && !rutaImagen.startsWith("https://") && !rutaImagen.startsWith("ftp://")) {
+                // Convertir a URL RAW de GitHub
+                rutaFinal = "https://raw.githubusercontent.com/JulioBejarMartinez/TuTiendaDeAlLaoBacalao/master/" + rutaImagen;
+            } else {
+                rutaFinal = rutaImagen;
+            }
+
+            URL url = new URL(rutaFinal);
+            BufferedImage img = ImageIO.read(url);
+            if (img != null) {
+                icon = new ImageIcon(redimensionarImagen(img, 90, 90));
+            }
+
+            if (icon != null) {
+                lblVistaPrevia.setIcon(icon);
+                lblVistaPrevia.setText("");
+            } else {
+                lblVistaPrevia.setIcon(null);
+                lblVistaPrevia.setText("Error al cargar");
+            }
+
+        } catch (Exception e) {
+            lblVistaPrevia.setIcon(null);
+            lblVistaPrevia.setText("Error al cargar");
+        }
+    });
+}
+
+
+        private BufferedImage redimensionarImagen(BufferedImage original, int ancho, int alto) {
+            BufferedImage redimensionada = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = redimensionada.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.drawImage(original, 0, 0, ancho, alto, null);
+            g2d.dispose();
+            return redimensionada;
+        }
+
         private void cargarDatosProducto(Producto producto) {
             txtNombre.setText(producto.getNombre());
             txtDescripcion.setText(producto.getDescripcion());
@@ -556,6 +917,7 @@ public class InventoryPanel extends JPanel {
             txtStockActual.setText(String.valueOf(producto.getStockActual()));
             txtStockMinimo.setText(String.valueOf(producto.getStockMinimo()));
             cmbTipo.setSelectedItem(producto.getTipo());
+            txtImagenProducto.setText(producto.getImagenProducto() != null ? producto.getImagenProducto() : "");
             
             // Seleccionar proveedor
             for (int i = 0; i < cmbProveedor.getItemCount(); i++) {
@@ -564,6 +926,9 @@ public class InventoryPanel extends JPanel {
                     break;
                 }
             }
+            
+            // Actualizar vista previa
+            actualizarVistaPrevia();
         }
 
         private boolean validarCampos() {
@@ -614,6 +979,7 @@ public class InventoryPanel extends JPanel {
             producto.setStockMinimo(Integer.parseInt(txtStockMinimo.getText()));
             producto.setTipo((String) cmbTipo.getSelectedItem());
             producto.setIdProveedor(((Proveedor) cmbProveedor.getSelectedItem()).getId());
+            producto.setImagenProducto(txtImagenProducto.getText().trim());
             return producto;
         }
     }

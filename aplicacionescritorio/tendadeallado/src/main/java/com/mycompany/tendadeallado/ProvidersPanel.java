@@ -9,8 +9,9 @@ public class ProvidersPanel extends JPanel {
 
     private JTable tablaProveedores;
     private DefaultTableModel modeloTabla;
+    private ConfigReader configReader;
 
-    public ProvidersPanel(JLabel statusBar) {
+    public ProvidersPanel(JLabel statusBar, ConfigReader configReader) {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -49,7 +50,7 @@ public class ProvidersPanel extends JPanel {
 
     private void cargarProveedores() {
         modeloTabla.setRowCount(0);
-        try (Connection conn = MainFrame.getDatabaseConnection();
+        try (Connection conn = DatabaseHelper.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT * FROM Proveedores")) {
 
@@ -76,7 +77,7 @@ public class ProvidersPanel extends JPanel {
 
         if (idProveedor != null) {
             // Cargar datos existentes
-            try (Connection conn = MainFrame.getDatabaseConnection();
+            try (Connection conn = DatabaseHelper.getConnection();
                  PreparedStatement ps = conn.prepareStatement("SELECT * FROM Proveedores WHERE ID_Proveedor = ?")) {
                 ps.setInt(1, idProveedor);
                 ResultSet rs = ps.executeQuery();
@@ -104,7 +105,7 @@ public class ProvidersPanel extends JPanel {
 
         int opcion = JOptionPane.showConfirmDialog(this, formPanel, idProveedor == null ? "Nuevo Proveedor" : "Editar Proveedor", JOptionPane.OK_CANCEL_OPTION);
         if (opcion == JOptionPane.OK_OPTION) {
-            try (Connection conn = MainFrame.getDatabaseConnection()) {
+            try (Connection conn = DatabaseHelper.getConnection()) {
                 if (idProveedor == null) {
                     String sql = "INSERT INTO Proveedores (ID_Proveedor, Nombre, Contacto, Telefono, Email) VALUES (NULL, ?, ?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -151,7 +152,7 @@ public class ProvidersPanel extends JPanel {
         int idProveedor = (int) modeloTabla.getValueAt(fila, 0);
         int confirm = JOptionPane.showConfirmDialog(this, "¿Estás seguro de que quieres eliminar este proveedor?", "Confirmar", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            try (Connection conn = MainFrame.getDatabaseConnection();
+            try (Connection conn = DatabaseHelper.getConnection();
                  PreparedStatement ps = conn.prepareStatement("DELETE FROM Proveedores WHERE ID_Proveedor = ?")) {
                 ps.setInt(1, idProveedor);
                 ps.executeUpdate();

@@ -18,28 +18,28 @@ public class MainFrame extends JFrame {
     private ToolBarManager toolBarManager;
     private NavigationPanel navigationPanel;
     private ThemeManager themeManager;
+    private PanelManager panelManager;
+    private ConfigReader configReader;
 
-    private static final String DB_HOST = "dam2.colexio-karbo.com";
-    private static final String DB_PORT = "3333";
-    private static final String DB_NAME = "proyecto_lumarsan_jbejar";
-    private static final String DB_USER = "dam2";
-    private static final String DB_PASSWORD = "Ka3b0134679";
 
     public MainFrame(String username) {
-        this.username = username;
-        initializeComponents();
-        setupLayout();
-        showHomePanel();
+    this.username = username;
+    this.configReader = new ConfigReader("config.xml"); // O la ruta donde guardas tu config
 
-        Connection conn = getDatabaseConnection();
-        if (conn != null) {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+    initializeComponents();
+    setupLayout();
+    showHomePanel();
+
+    Connection conn = getDatabaseConnection();
+    if (conn != null) {
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
+}
+
 
     private void initializeComponents() {
         setTitle("Sistema de Gestión de Tienda - Panel Principal");
@@ -49,6 +49,7 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
 
         themeManager = new ThemeManager();
+        panelManager = new PanelManager(this);
         menuBarManager = new MenuBarManager(this, themeManager);
         toolBarManager = new ToolBarManager(this, username);
         navigationPanel = new NavigationPanel(this);
@@ -87,7 +88,7 @@ public class MainFrame extends JFrame {
     }
 
     public void showHomePanel() {
-        JPanel panel = new HomePanel();
+        JPanel panel = new HomePanel(configReader);
         updateStatusBar("Inicio - Resumen del sistema");
         if (themeManager != null) {
             themeManager.applyThemeToComponent(panel);
@@ -96,7 +97,7 @@ public class MainFrame extends JFrame {
     }
 
     public void showInventoryPanel() {
-        JPanel panel = new InventoryPanel(getStatusBar());
+        JPanel panel = new InventoryPanel(getStatusBar(), configReader);
         updateStatusBar("Gestión de Inventario");
         if (themeManager != null) {
             themeManager.applyThemeToComponent(panel);
@@ -105,16 +106,19 @@ public class MainFrame extends JFrame {
     }
 
     public void showSalesPanel() {
-        JPanel panel = new SalesPanel(getStatusBar());
-        updateStatusBar("Gestión de Ventas");
-        if (themeManager != null) {
-            themeManager.applyThemeToComponent(panel);
-        }
-        setContentPanel(panel);
+    JPanel panel;
+    panel = new SalesPanel(getStatusBar(), configReader); // fallback: panel vacío o con mensaje
+
+    updateStatusBar("Gestión de Ventas");
+    if (themeManager != null) {
+        themeManager.applyThemeToComponent(panel);
     }
+    setContentPanel(panel);
+}
+
 
     public void showCustomersPanel() {
-        JPanel panel = new CustomersPanel(getStatusBar());
+        JPanel panel = new CustomersPanel(getStatusBar(), configReader);
         updateStatusBar("Gestión de Clientes");
         if (themeManager != null) {
             themeManager.applyThemeToComponent(panel);
@@ -123,7 +127,7 @@ public class MainFrame extends JFrame {
     }
     
     public void showEmployeesPanel() {
-        JPanel panel = new EmployeesPanel(getStatusBar());
+        JPanel panel = new EmployeesPanel(getStatusBar(), configReader);
         updateStatusBar("Gestión de Empleados");
         if (themeManager != null){
             themeManager.applyThemeToComponent(panel);
@@ -132,7 +136,7 @@ public class MainFrame extends JFrame {
     }
     
     public void showProvidersPanel() {
-        JPanel panel = new ProvidersPanel (getStatusBar());
+        JPanel panel = new ProvidersPanel (getStatusBar(), configReader);
         updateStatusBar("Gestión de Proveedores");
         if (themeManager != null){
             themeManager.applyThemeToComponent(panel);
@@ -141,7 +145,7 @@ public class MainFrame extends JFrame {
     }
 
     public void showReportsPanel() {
-        JPanel panel = new ReportsPanel(getStatusBar());
+        JPanel panel = new ReportsPanel(getStatusBar(), configReader);
         updateStatusBar("Informes y Estadísticas");
         if (themeManager != null) {
             themeManager.applyThemeToComponent(panel);
@@ -199,26 +203,32 @@ public class MainFrame extends JFrame {
         return statusBar;
     }
 
-    public static Connection getDatabaseConnection() {
-        Connection conn = null;
-        String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&serverTimezone=UTC";
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            conn = DriverManager.getConnection(url, DB_USER, DB_PASSWORD);
-            System.out.println("Conexión a la base de datos exitosa.");
-        } catch (ClassNotFoundException e) {
-            System.err.println("Error: Driver JDBC no encontrado.");
-            e.printStackTrace();
-        } catch (SQLException e) {
-            System.err.println("Error al conectar a la base de datos.");
-            e.printStackTrace();
-        }
-        return conn;
-    }
+    public Connection getDatabaseConnection() {
+    Connection conn = null;
+    try {
+        String url = "jdbc:mysql://" +
+                configReader.getDbHost() + ":" +
+                configReader.getDbPort() + "/" +
+                configReader.getDbName() +
+                "?useSSL=false&serverTimezone=UTC";
 
-    public static int getCurrentEmployeeId() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getCurrentEmployeeId'");
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
+        System.out.println("Conexión a la base de datos exitosa.");
+    } catch (ClassNotFoundException e) {
+        System.err.println("Error: Driver JDBC no encontrado.");
+        e.printStackTrace();
+    } catch (SQLException e) {
+        System.err.println("Error al conectar a la base de datos.");
+        e.printStackTrace();
     }
+    return conn;
+}
+
+    public PanelManager getPanelManager() {
+    return panelManager;
+}
+
+    
 
 }

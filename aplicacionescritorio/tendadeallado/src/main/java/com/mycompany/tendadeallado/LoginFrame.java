@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -111,19 +112,27 @@ public class LoginFrame extends JFrame {
     }
 
     private void verificarLogin() {
-        String usuario = userField.getText().trim();
-        String inputPassword = new String(passwordField.getPassword());
+    String usuario = userField.getText().trim();
+    String inputPassword = new String(passwordField.getPassword());
 
-        if (usuario.isEmpty() || inputPassword.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor, completa todos los campos.");
-            return;
-        }
+    if (usuario.isEmpty() || inputPassword.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Por favor, completa todos los campos.");
+        return;
+    }
 
-        String query = "SELECT Nombre, Contrasena FROM Empleados WHERE Usuario = ?";
+    String query = "SELECT Nombre, Contrasena FROM Empleados WHERE Usuario = ?";
 
-        try (Connection conn = MainFrame.getDatabaseConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
+    try {
+        // Leer configuración desde config.xml
+        ConfigReader configReader = new ConfigReader("config.xml");
 
+        // Construir la conexión usando los datos del XML
+        String url = "jdbc:mysql://" + configReader.getDbHost() + ":" +
+                     configReader.getDbPort() + "/" +
+                     configReader.getDbName() + "?useSSL=false&serverTimezone=UTC";
+        Connection conn = DriverManager.getConnection(url, configReader.getDbUser(), configReader.getDbPassword());
+
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, usuario);
             ResultSet rs = stmt.executeQuery();
 
@@ -131,7 +140,6 @@ public class LoginFrame extends JFrame {
                 String nombre = rs.getString("Nombre");
                 String hashedPassword = rs.getString("Contrasena");
 
-                // Aquí comprobamos si la contraseña está cifrada con bcrypt (empieza por $2a$, $2b$, etc)
                 if (hashedPassword.startsWith("$2a$") || hashedPassword.startsWith("$2b$") || hashedPassword.startsWith("$2y$")) {
                     if (BCrypt.checkpw(inputPassword, hashedPassword)) {
                         accesoExitoso(nombre);
@@ -139,7 +147,6 @@ public class LoginFrame extends JFrame {
                         mostrarErrorContrasena();
                     }
                 } else {
-                    // Si no está cifrada (texto plano), comparamos directamente
                     if (inputPassword.equals(hashedPassword)) {
                         accesoExitoso(nombre);
                     } else {
@@ -150,18 +157,28 @@ public class LoginFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "No existe un usuario con ese nombre.");
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error al conectar con la base de datos.");
+            conn.close();
         }
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error al conectar con la base de datos.");
     }
+}
+
 
     private void accesoExitoso(String nombre) {
-        JOptionPane.showMessageDialog(this, "Inicio de sesión exitoso. ¡Bienvenido " + nombre + "!");
-        MainFrame mainFrame = new MainFrame(nombre);
-        mainFrame.setVisible(true);
-        this.dispose();
-    }
+    JOptionPane.showMessageDialog(this, "Inicio de sesión exitoso. ¡Bienvenido " + nombre + "!");
+    
+    MainFrame mainFrame = new MainFrame(nombre);
+
+    // Aplicar tema claro por defecto
+    mainFrame.getPanelManager().getThemeManager().setTheme("Claro");
+    mainFrame.getPanelManager().applyThemeToAllPanels();
+
+    mainFrame.setVisible(true);
+    this.dispose();
+}
+
 
     private void mostrarErrorContrasena() {
         JOptionPane.showMessageDialog(this, "Contraseña incorrecta.");

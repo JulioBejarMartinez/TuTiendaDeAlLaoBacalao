@@ -1312,7 +1312,7 @@ public class PriceCalculatorPanel extends JPanel {
     private void loadProducts() {
     products.clear();
 
-    try (Connection conn = MainFrame.getDatabaseConnection();
+    try (Connection conn = DatabaseHelper.getConnection();
          Statement stmt = conn.createStatement();
          ResultSet rs = stmt.executeQuery("SELECT ID_Producto, Nombre, Tipo, PrecioProducto FROM Productos")) {
 
@@ -1345,7 +1345,7 @@ public class PriceCalculatorPanel extends JPanel {
     String query = "SELECT id, nombre, tipo_cliente, categoria_producto, porcentaje_descuento, cantidad_minima, descripcion " +
                    "FROM tarifas WHERE activa = 1";
 
-    try (Connection conn = MainFrame.getDatabaseConnection();
+    try (Connection conn = DatabaseHelper.getConnection();
          Statement stmt = conn.createStatement();
          ResultSet rs = stmt.executeQuery(query)) {
 

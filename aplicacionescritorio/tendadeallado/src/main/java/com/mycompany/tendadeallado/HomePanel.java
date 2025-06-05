@@ -13,7 +13,7 @@ public class HomePanel extends JPanel {
    final private JLabel productosLabel;
    final private JLabel alertasLabel;
 
-    public HomePanel() {
+    public HomePanel(ConfigReader configReader) {
         super(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -91,7 +91,7 @@ public class HomePanel extends JPanel {
         new Thread(() -> {
             try {
                 // Conexión a la base de datos usando el metodo conexion desde MainFrame
-                Connection conn = MainFrame.getDatabaseConnection();
+                Connection conn = DatabaseHelper.getConnection();
                 if (conn == null) {
                     SwingUtilities.invokeLater(() -> {
                         ventasLabel.setText("Error de conexión");
