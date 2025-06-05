@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <database>
+        <host>dam2.colexio-karbo.com</host>
+        <port>3333</port>
+        <name>proyecto_lumarsan_jbejar</name>
+        <user>dam2</user>
+        <password>Ka3b0134679</password>
+    </database>
+    
+    <api>
+        <baseUrl>http://localhost:3000</baseUrl>
+        <endpoints>
+            <login>/login</login>
+            <registro>/registro</registro>
+            <productos>/productos</productos>
+            <pedido>/realizar-pedido</pedido>
+            <usuario>/usuario</usuario>
+        </endpoints>
+    </api>
+</config>
